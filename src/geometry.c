@@ -3,6 +3,109 @@
 #include <math.h>
 #include "geometry.h"
 
+int num_verts = 0;
+int num_facets = 0;
+Vert3d *verts;
+Facet3d *facets;
+
+// ------------------------------------------------------------------
+// INGEST FUNCTIONS
+// ------------------------------------------------------------------
+
+static void count_labels(char *arg) 
+{
+    FILE *fp = fopen(arg, "r");
+    char c;
+
+    while (fscanf(fp, "%c", &c) == 1)
+    {
+        if (c == 'v')
+        {
+            fscanf(fp, "%c", &c);
+            if (c == ' ') 
+            {
+                num_verts++;
+            }
+        }
+        else if (c == 'f')
+        {
+            num_facets++;
+        }
+    }
+
+    rewind(fp);
+}
+
+Data3d * read_obj(char *arg)
+{
+    count_labels(arg);
+    FILE *fp = fopen(arg, "r");
+    verts = calloc(num_verts, sizeof(Vert3d));
+    facets = calloc(num_facets, sizeof(Facet3d));
+    int vert_count = 0;
+    int facet_count = 0;
+    char c;
+    
+    while (fscanf(fp, "%c", &c) == 1)
+    {
+        if (c == 'v')
+        {
+            fscanf(fp, "%c", &c);
+            if (c == ' ') 
+            {
+                fscanf(fp, " %lf %lf %lf\n", &verts[vert_count].x, 
+                    &verts[vert_count].y, &verts[vert_count].z);
+                vert_count++;
+            } 
+        }
+        if (c == 'f')
+        {
+            fscanf(fp, "%d/%*d/%*d %d/%*d/%*d %d/%*d/%*d\n", &facets[facet_count].a,
+                &facets[facet_count].b, &facets[facet_count].c);
+            facet_count++;
+        }
+    }
+
+    Data3d *obj_data = calloc(1, sizeof(Data3d));
+    obj_data -> verts = verts;
+    obj_data -> facets = facets;
+    return obj_data;
+}
+
+static Tri3d populate_tri(Vert3d *verts, int a, int b, int c)
+{
+    Tri3d tri;
+
+    Vert3d vert1 = verts[a - 1];
+    Vert3d vert2 = verts[b - 1];
+    Vert3d vert3 = verts[c - 1];
+    tri.v[0] = vert1;
+    tri.v[1] = vert2;
+    tri.v[2] = vert3;
+
+    return tri;
+}
+
+TriMesh3d * populate_trimesh(Data3d *obj_data)
+{
+    TriMesh3d *mesh = calloc(1, sizeof(TriMesh3d));
+    Tri3d *tris = calloc(num_facets, sizeof(Tri3d));
+
+    for (int i = 2; i < num_facets; i++)
+    {
+        Tri3d tri = populate_tri(obj_data -> verts, obj_data -> facets[i].a, 
+            obj_data -> facets[i].b, obj_data -> facets[i].c);
+
+        tris[i - 2] = tri;
+    }
+    mesh -> tris = tris;
+    return mesh;
+}
+
+// ------------------------------------------------------------------
+// MATH FUNCTIONS
+// ------------------------------------------------------------------
+
 static Vert3d multiple_matrix_vector(Mat4x4 *m, Vert3d v) 
 {
     Vert3d o;
