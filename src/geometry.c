@@ -3,7 +3,7 @@
 #include <math.h>
 #include "geometry.h"
 
-Vert3d multiple_matrix_vector(Mat4x4 *m, Vert3d v) 
+static Vert3d multiple_matrix_vector(Mat4x4 *m, Vert3d v) 
 {
     Vert3d o;
 
