@@ -1,6 +1,11 @@
 #ifndef GEOMETRY_H_
 #define GEOMETRY_H_
 
+typedef struct Vert3d
+{
+    double x, y, z;
+} Vert3d;
+
 typedef struct Facet3d
 {
     int a, b, c;
@@ -11,11 +16,6 @@ typedef struct Data3d
     Vert3d *verts;
     Facet3d *facets;
 } Data3d;
-
-typedef struct Vert3d
-{
-    double x, y, z;
-} Vert3d;
 
 typedef struct Tri3d
 {
