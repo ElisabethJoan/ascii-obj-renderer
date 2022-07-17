@@ -48,6 +48,16 @@ void draw_line(int x1, int y1, int x2, int y2, char value)
     else
     {
         // Draw Diagonal Lines
+        if (x1 > x2) 
+        {
+            int temp = x1;
+            x1 = x2;
+            x2 = temp;
+            temp = y1;
+            y1 = y2;
+            y2 = temp;
+        }
+
         float dx = x2 - x1;
         float dy = y2 - y1;
         float err = 0.0;
@@ -66,6 +76,13 @@ void draw_line(int x1, int y1, int x2, int y2, char value)
             }
         }
     }
+}
+
+void draw_tri(int x1, int y1, int x2, int y2, int x3, int y3, char value)
+{
+    draw_line(x1, y1, x2, y2, value);
+    draw_line(x2, y2, x3, y3, value);
+    draw_line(x3, y3, x1, y1, value);
 }
 
 // ------------------------------------------------------------------
@@ -129,4 +146,26 @@ void show_screen(void)
     }
 
     refresh();
+}
+
+void clear_screen(void)
+{
+    if (m_screen != NULL) {
+        int W = screen_width();
+        int H = screen_height();
+
+        char *screen_pixels = m_screen -> pixels[0];
+
+        memset(screen_pixels, ' ', W * H);
+    }
+}
+
+int screen_width(void)
+{
+    return m_screen -> width;
+}
+
+int screen_height(void)
+{
+    return m_screen -> height;
 }
