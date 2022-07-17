@@ -1,6 +1,17 @@
 #ifndef GEOMETRY_H_
 #define GEOMETRY_H_
 
+typedef struct Facet3d
+{
+    int a, b, c;
+} Facet3d;
+
+typedef struct Data3d 
+{
+    Vert3d *verts;
+    Facet3d *facets;
+} Data3d;
+
 typedef struct Vert3d
 {
     double x, y, z;
@@ -20,6 +31,9 @@ typedef struct Mat4x4
 {
     float m[4][4];
 } Mat4x4;
+
+Data3d * read_obj(char *arg);
+TriMesh3d * populate_trimesh(Data3d *obj_data);
 
 void roll(Tri3d *tri, float f_theta);
 void pitch(Tri3d *tri, float f_theta);
