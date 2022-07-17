@@ -21,7 +21,6 @@ typedef struct Mat4x4
     float m[4][4];
 } Mat4x4;
 
-static Vert3d multiple_matrix_vector(Mat4x4 *m, Vert3d v);
 void roll(Tri3d *tri, float f_theta);
 void pitch(Tri3d *tri, float f_theta);
 void yaw(Tri3d *tri, float f_theta);
