@@ -115,7 +115,7 @@ static void create_buffer(Screen **old_screen, int width, int height, char value
 
 void setup_screen(void) 
 {
-    // Enter curses mode
+    // Initialize curses mode
     initscr();
 
     // Do not echo keypresses
@@ -124,10 +124,16 @@ void setup_screen(void)
     // Turn off cursor
     curs_set(0);
 
+    // Make typed chars immediately available
+    cbreak();
+
+    // Causes getch to be non-blocking
+    nodelay(stdscr, TRUE);
+
     // Clear potentially lingering state of screen
     clear();
 
-    // Create screen buffers
+    // Create screen buffer
     create_buffer(&m_screen, getmaxx(stdscr), getmaxy(stdscr), ' ');
 }
 

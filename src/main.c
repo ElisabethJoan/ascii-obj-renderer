@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <curses.h>
 #include "graphics.h"
 #include "geometry.h"
+
+#define ROTATION_CONST 0.0005f
+#define TRANSLATION_CONST 0.3f
 
 int main(int argc, char *argv[])
 {
@@ -12,19 +16,54 @@ int main(int argc, char *argv[])
     int W = screen_width();
     int H = screen_height();
 
-    float f_theta = 0;
+    float x_theta, y_theta, z_theta;
+    x_theta = y_theta = z_theta = 0;
+    int tri_count = mesh -> tri_count;
+    int temp, key;
     while(1)
     {
         clear_screen();
-        f_theta += 0.0003f;
-        for (int i = 0; i < 12; i++)
+        temp = getch();
+        if (temp != -1)
+        {
+            key = temp;
+        }
+
+        switch (key)
+        {
+            case 'w':
+                x_theta -= ROTATION_CONST;
+                break;
+            case 's':
+                x_theta += ROTATION_CONST;
+                break;
+            case 'a':
+                y_theta -= ROTATION_CONST;
+                break;
+            case 'd':
+                y_theta += ROTATION_CONST;
+                break;
+            case 'q':
+                z_theta -= ROTATION_CONST;
+                break;
+            case 'e':
+                z_theta += ROTATION_CONST;
+                break;
+            case 'r':
+                x_theta = y_theta = z_theta = 0;
+                break;
+            default:
+                break;
+        }
+
+        for (int i = 0; i < tri_count; i++)
         {
             Tri3d tri = mesh -> tris[i];
-            roll(&tri, f_theta);
-            // pitch(&tri, f_theta);
-            // yaw(&tri, f_theta);
+            roll(&tri, x_theta);
+            pitch(&tri, y_theta);
+            yaw(&tri, z_theta);
 
-            translate(&tri, 3.0f);
+            translate(&tri, TRANSLATION_CONST);
             project(&tri, W, H);
 
             draw_tri(tri.v[0].x, tri.v[0].y,
@@ -32,7 +71,7 @@ int main(int argc, char *argv[])
                 tri.v[2].x, tri.v[2].y, '*');
         }
         show_screen();
-    }
+    } 
 
     // endwin();
 }
