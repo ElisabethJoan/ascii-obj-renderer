@@ -25,6 +25,7 @@ typedef struct Tri3d
 typedef struct TriMesh3d 
 {
     Tri3d *tris;
+    int tri_count;
 } TriMesh3d;
 
 typedef struct Mat4x4

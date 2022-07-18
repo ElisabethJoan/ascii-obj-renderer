@@ -90,6 +90,7 @@ TriMesh3d * populate_trimesh(Data3d *obj_data)
 {
     TriMesh3d *mesh = calloc(1, sizeof(TriMesh3d));
     Tri3d *tris = calloc(num_facets, sizeof(Tri3d));
+    int tri_count = 0;
 
     for (int i = 2; i < num_facets; i++)
     {
@@ -97,8 +98,10 @@ TriMesh3d * populate_trimesh(Data3d *obj_data)
             obj_data -> facets[i].b, obj_data -> facets[i].c);
 
         tris[i - 2] = tri;
+        tri_count++;
     }
     mesh -> tris = tris;
+    mesh -> tri_count = tri_count;
     return mesh;
 }
 
