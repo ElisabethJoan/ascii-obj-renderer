@@ -1,7 +1,3 @@
-*
-!/**/
-!*.*
-
 # Prerequisites
 *.d
 
@@ -57,3 +53,5 @@ dkms.conf
 
 # Extra Ignores
 *.obj
+
+bin/*
