@@ -8,18 +8,20 @@ typedef struct Vert3d
 
 typedef struct Facet3d
 {
-    int a, b, c;
+    int a, b, c, n;
 } Facet3d;
 
 typedef struct Data3d 
 {
     Vert3d *verts;
     Facet3d *facets;
+    Vert3d *normals;
 } Data3d;
 
 typedef struct Tri3d
 {
     Vert3d v[3];
+    Vert3d n;
 } Tri3d;
 
 typedef struct TriMesh3d 
@@ -41,5 +43,8 @@ void pitch(Tri3d *tri, float f_theta);
 void yaw(Tri3d *tri, float f_theta);
 void translate(Tri3d *tri, float offset);
 void project(Tri3d *tri, int W, int H);
+
+// Mat4x4 * inverse(Mat4x4 *m);
+// Mat4x4 * transpose(Mat4x4 *m);
 
 #endif /* GEOMETRY_H_ */
