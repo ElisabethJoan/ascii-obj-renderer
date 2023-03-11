@@ -5,8 +5,10 @@
 
 int num_verts = 0;
 int num_facets = 0;
+int num_normals = 0;
 Vert3d *verts;
 Facet3d *facets;
+Vert3d *normals;
 
 // ------------------------------------------------------------------
 // INGEST FUNCTIONS
@@ -26,15 +28,58 @@ static void count_labels(char *arg)
             {
                 num_verts++;
             }
+            else if (c == 'n')
+            {
+                num_normals++;
+            }
+            
         }
         else if (c == 'f')
         {
-            num_facets++;
+            fscanf(fp, "%c", &c);
+            if (c == ' ') {
+                num_facets++;
+            }
         }
     }
 
     rewind(fp);
 }
+
+static void normalize_obj(Vert3d *verts, int v_size, Vert3d *norms, int n_size) {
+    // There has to be a less stupid way to do this :^(
+    float min = 100;
+    float max = -100;
+    for (int i = 0; i < v_size; i++) {
+        if (verts[i].x > max) max = verts[i].x;
+        if (verts[i].y > max) max = verts[i].y;
+        if (verts[i].z > max) max = verts[i].z;
+        if (verts[i].x < min) min = verts[i].x;
+        if (verts[i].y < min) min = verts[i].y;
+        if (verts[i].z < min) min = verts[i].z;
+    }
+    for (int i = 0; i < v_size; i++) {
+        verts[i].x = 2 * (verts[i].x - min) / (max - min) - 1;
+        verts[i].y = 2 * (verts[i].y - min) / (max - min) - 1;
+        verts[i].z = 2 * (verts[i].z - min) / (max - min) - 1;
+    }
+    min = 100;
+    max = -100;
+    for (int i = 0; i < n_size; i++) {
+        if (norms[i].x > max) max = norms[i].x;
+        if (norms[i].y > max) max = norms[i].y;
+        if (norms[i].z > max) max = norms[i].z;
+        if (norms[i].x < min) min = norms[i].x;
+        if (norms[i].y < min) min = norms[i].y;
+        if (norms[i].z < min) min = norms[i].z;
+    }
+    for (int i = 0; i < n_size; i++) {
+        norms[i].x = 2 * (norms[i].x - min) / (max - min) - 1;
+        norms[i].y = 2 * (norms[i].y - min) / (max - min) - 1;
+        norms[i].z = 2 * (norms[i].z - min) / (max - min) - 1;
+    }
+}
+
 
 Data3d * read_obj(char *arg)
 {
@@ -42,8 +87,10 @@ Data3d * read_obj(char *arg)
     FILE *fp = fopen(arg, "r");
     verts = calloc(num_verts, sizeof(Vert3d));
     facets = calloc(num_facets, sizeof(Facet3d));
+    normals = calloc(num_normals, sizeof(Vert3d));
     int vert_count = 0;
     int facet_count = 0;
+    int normal_count = 0;
     char c;
     
     while (fscanf(fp, "%c", &c) == 1)
@@ -56,32 +103,50 @@ Data3d * read_obj(char *arg)
                 fscanf(fp, " %lf %lf %lf\n", &verts[vert_count].x, 
                     &verts[vert_count].y, &verts[vert_count].z);
                 vert_count++;
-            } 
+            }
+            else if (c == 'n')
+            {
+                fscanf(fp, " %lf %lf %lf\n", &normals[normal_count].x, 
+                    &normals[normal_count].y, &normals[normal_count].z);
+                normal_count++;
+            }
         }
         if (c == 'f')
         {
-            fscanf(fp, "%d/%*d/%*d %d/%*d/%*d %d/%*d/%*d\n", &facets[facet_count].a,
-                &facets[facet_count].b, &facets[facet_count].c);
-            facet_count++;
+            fscanf(fp, "%c", &c);
+            if (c == ' ') {
+                // fscanf(fp, "%d %d %d\n", &facets[facet_count].a,
+                //     &facets[facet_count].b, &facets[facet_count].c);
+                fscanf(fp, "%d//%*d %d//%*d %d//%d\n", &facets[facet_count].a,
+                    &facets[facet_count].b, &facets[facet_count].c, &facets[facet_count].n);
+                facet_count++;
+            }
         }
     }
+
+    normalize_obj(verts, vert_count, normals, normal_count);
 
     Data3d *obj_data = calloc(1, sizeof(Data3d));
     obj_data -> verts = verts;
     obj_data -> facets = facets;
+    obj_data -> normals = normals;
     return obj_data;
 }
 
-static Tri3d populate_tri(Vert3d *verts, int a, int b, int c)
+static Tri3d populate_tri(Vert3d *verts, Vert3d *normals, int a, int b, int c, int n)
 {
     Tri3d tri;
-
+    Vert3d normal;
     Vert3d vert1 = verts[a - 1];
     Vert3d vert2 = verts[b - 1];
     Vert3d vert3 = verts[c - 1];
+    normal.x = normals[n - 1].x;
+    normal.y = normals[n - 1].y;
+    normal.z = normals[n - 1].z;
     tri.v[0] = vert1;
     tri.v[1] = vert2;
     tri.v[2] = vert3;
+    tri.n = normal;
 
     return tri;
 }
@@ -92,12 +157,12 @@ TriMesh3d * populate_trimesh(Data3d *obj_data)
     Tri3d *tris = calloc(num_facets, sizeof(Tri3d));
     int tri_count = 0;
 
-    for (int i = 2; i < num_facets; i++)
+    for (int i = 0; i < num_facets; i++)
     {
-        Tri3d tri = populate_tri(obj_data -> verts, obj_data -> facets[i].a, 
-            obj_data -> facets[i].b, obj_data -> facets[i].c);
+        Tri3d tri = populate_tri(obj_data -> verts, obj_data -> normals, obj_data -> facets[i].a, 
+            obj_data -> facets[i].b, obj_data -> facets[i].c, obj_data -> facets[i].n);
 
-        tris[i - 2] = tri;
+        tris[i] = tri;
         tri_count++;
     }
     mesh -> tris = tris;
@@ -126,6 +191,111 @@ static Vert3d multiple_matrix_vector(Mat4x4 *m, Vert3d v)
     return o;
 }
 
+// static Mat4x4 * calc_cofactor(Mat4x4 *m, int p, int q, int n)
+// {
+//     Mat4x4 *temp = calloc(1, sizeof(Mat4x4));
+//     int i, j;
+//     i = j = 0;
+
+//     for (int row = 0; row < n; row++)
+//     {
+//         for (int col = 0; col < n; col++)
+//         {
+//             if (row != p && col != q)
+//             {
+//                 temp -> m[i][j++] = m -> m[row][col];
+
+//                 if (j == n - 1)
+//                 {
+//                     j = 0;
+//                     i++;
+//                 }
+//             }
+//         }
+//     }
+//     return temp;
+// }
+
+// static int determinant(Mat4x4 *m, int n)
+// {
+//     int d = 0;
+//     if (n == 1)
+//     {
+//         return m -> m[0][0];
+//     }
+    
+//     Mat4x4 *cofactors = calloc(1, sizeof(Mat4x4));
+//     int sign = 1;
+
+//     for (int f = 0; f < n; f++)
+//     {
+//         cofactors = calc_cofactor(m, 0, f, n);
+//         d += sign * m -> m[0][f] * determinant(cofactors, n - 1);
+
+//         sign = -sign;
+//     }
+    
+//     return d;
+// }
+
+// static Mat4x4 * adjoint(Mat4x4 *m)
+// {
+//     Mat4x4 *adj = calloc(1, sizeof(Mat4x4));
+//     if (4 == 1)
+//     {
+//         adj -> m[0][0] = 1;
+//         return adj;
+//     }
+
+//     int sign = 1;
+//     Mat4x4 *cofactors = calloc(1, sizeof(Mat4x4));
+
+//     for (int i = 0; i < 4; i++)
+//     {
+//         for (int j = 0; j < 4; j++)
+//         {
+//             cofactors = calc_cofactor(m, i, j, 4);
+
+//             sign = ((i + j) % 2 == 0) ? 1 : -1;
+
+//             adj -> m[j][i] = (sign) * (determinant(cofactors, 3));
+//         }
+//     }
+    
+//     return adj;
+// }
+
+// Mat4x4 * inverse(Mat4x4 *m)
+// {
+//     int det = determinant(m, 4);
+
+//     Mat4x4 *adj = calloc(1, sizeof(Mat4x4));
+//     Mat4x4 *inverse = calloc(1, sizeof(Mat4x4));
+//     adj = adjoint(m);
+
+//     for (int i = 0; i < 4; i++)
+//     {
+//         for (int j = 0; j < 4; j++)
+//         {
+//             inverse -> m[i][j] = adj -> m[i][j] / (float) det;
+//         }
+//     }
+//     return inverse;
+// }
+
+// Mat4x4 * transpose(Mat4x4 *m)
+// {
+//     Mat4x4 *transposed = calloc(1, sizeof(Mat4x4));
+//     for (int i = 0; i < 4; i++)
+//     {
+//         for (int j = 0; j < 4; j++)
+//         {
+//             transposed -> m[j][i] = m -> m[i][j];
+//         }
+//     }
+//     return transposed;
+// }
+
 void roll(Tri3d *tri, float f_theta)
 {
     Mat4x4 *mat_rot_x = calloc(1, sizeof(Mat4x4));
@@ -136,10 +306,16 @@ void roll(Tri3d *tri, float f_theta)
     mat_rot_x -> m[2][2] = cosf(f_theta);
     mat_rot_x -> m[3][3] = 1;
 
+    // Mat4x4 *mat_inverse = calloc(1, sizeof(Mat4x4));
+    // mat_inverse = inverse(mat_rot_x);
+    // Mat4x4 *mat_transpose = calloc(1, sizeof(Mat4x4));
+    // mat_transpose = transpose(mat_inverse);
+
     Tri3d tri_rot_x;
     tri_rot_x.v[0] = multiple_matrix_vector(mat_rot_x, tri -> v[0]);
     tri_rot_x.v[1] = multiple_matrix_vector(mat_rot_x, tri -> v[1]);
     tri_rot_x.v[2] = multiple_matrix_vector(mat_rot_x, tri -> v[2]);
+    // tri_rot_x.n = multiple_matrix_vector(mat_transpose, tri -> n);
     *tri = tri_rot_x;
 
     free(mat_rot_x);
@@ -155,10 +331,16 @@ void pitch(Tri3d *tri, float f_theta)
     mat_rot_y -> m[2][2] = cosf(f_theta);
     mat_rot_y -> m[3][3] = 1;
 
+    // Mat4x4 *mat_inverse = calloc(1, sizeof(Mat4x4));
+    // mat_inverse = inverse(mat_rot_y);
+    // Mat4x4 *mat_transpose = calloc(1, sizeof(Mat4x4));
+    // mat_transpose = transpose(mat_inverse);
+
     Tri3d tri_rot_y;
     tri_rot_y.v[0] = multiple_matrix_vector(mat_rot_y, tri -> v[0]);
     tri_rot_y.v[1] = multiple_matrix_vector(mat_rot_y, tri -> v[1]);
     tri_rot_y.v[2] = multiple_matrix_vector(mat_rot_y, tri -> v[2]);
+    // tri_rot_y.n = multiple_matrix_vector(mat_transpose, tri -> n);
     *tri = tri_rot_y;
 
     free(mat_rot_y);
@@ -174,10 +356,16 @@ void yaw(Tri3d *tri, float f_theta)
     mat_rot_z -> m[2][2] = 1;
     mat_rot_z -> m[3][3] = 1;
 
+    // Mat4x4 *mat_inverse = calloc(1, sizeof(Mat4x4));
+    // mat_inverse = inverse(mat_rot_z);
+    // Mat4x4 *mat_transpose = calloc(1, sizeof(Mat4x4));
+    // mat_transpose = transpose(mat_inverse);
+
     Tri3d tri_rot_z;
     tri_rot_z.v[0] = multiple_matrix_vector(mat_rot_z, tri -> v[0]);
     tri_rot_z.v[1] = multiple_matrix_vector(mat_rot_z, tri -> v[1]);
     tri_rot_z.v[2] = multiple_matrix_vector(mat_rot_z, tri -> v[2]);
+    // tri_rot_z.n = multiple_matrix_vector(mat_transpose, tri -> n);
     *tri = tri_rot_z;
 
     free(mat_rot_z);
