@@ -10,6 +10,7 @@ Vert3d *verts;
 Facet3d *facets;
 Vert3d *normals;
 
+
 // ------------------------------------------------------------------
 // INGEST FUNCTIONS
 // ------------------------------------------------------------------
@@ -115,8 +116,6 @@ Data3d * read_obj(char *arg)
         {
             fscanf(fp, "%c", &c);
             if (c == ' ') {
-                // fscanf(fp, "%d %d %d\n", &facets[facet_count].a,
-                //     &facets[facet_count].b, &facets[facet_count].c);
                 fscanf(fp, "%d//%*d %d//%*d %d//%d\n", &facets[facet_count].a,
                     &facets[facet_count].b, &facets[facet_count].c, &facets[facet_count].n);
                 facet_count++;
@@ -191,7 +190,7 @@ static Vert3d multiple_matrix_vector(Mat4x4 *m, Vert3d v)
     return o;
 }
 
-// static Mat4x4 * calc_cofactor(Mat4x4 *m, int p, int q, int n)
+// static Mat4x4 * cofactor(Mat4x4 *m, int p, int q, int n)
 // {
 //     Mat4x4 *temp = calloc(1, sizeof(Mat4x4));
 //     int i, j;
@@ -216,9 +215,9 @@ static Vert3d multiple_matrix_vector(Mat4x4 *m, Vert3d v)
 //     return temp;
 // }
 
-// static int determinant(Mat4x4 *m, int n)
+// static float determinant(Mat4x4 *m, int n)
 // {
-//     int d = 0;
+//     float det = 0;
 //     if (n == 1)
 //     {
 //         return m -> m[0][0];
@@ -229,13 +228,12 @@ static Vert3d multiple_matrix_vector(Mat4x4 *m, Vert3d v)
 
 //     for (int f = 0; f < n; f++)
 //     {
-//         cofactors = calc_cofactor(m, 0, f, n);
-//         d += sign * m -> m[0][f] * determinant(cofactors, n - 1);
+//         cofactors = cofactor(m, 0, f, n);
+//         det += sign * m -> m[0][f] * determinant(cofactors, n - 1);
 
 //         sign = -sign;
 //     }
-    
-//     return d;
+//     return det;
 // }
 
 // static Mat4x4 * adjoint(Mat4x4 *m)
@@ -254,20 +252,17 @@ static Vert3d multiple_matrix_vector(Mat4x4 *m, Vert3d v)
 //     {
 //         for (int j = 0; j < 4; j++)
 //         {
-//             cofactors = calc_cofactor(m, i, j, 4);
-
+//             cofactors = cofactor(m, i, j, 4);
 //             sign = ((i + j) % 2 == 0) ? 1 : -1;
-
 //             adj -> m[j][i] = (sign) * (determinant(cofactors, 3));
 //         }
 //     }
-    
 //     return adj;
 // }
 
-// Mat4x4 * inverse(Mat4x4 *m)
+// static Mat4x4 * inverse(Mat4x4 *m)
 // {
-//     int det = determinant(m, 4);
+//     float det = determinant(m, 4);
 
 //     Mat4x4 *adj = calloc(1, sizeof(Mat4x4));
 //     Mat4x4 *inverse = calloc(1, sizeof(Mat4x4));
@@ -283,7 +278,7 @@ static Vert3d multiple_matrix_vector(Mat4x4 *m, Vert3d v)
 //     return inverse;
 // }
 
-// Mat4x4 * transpose(Mat4x4 *m)
+// static Mat4x4 * transpose(Mat4x4 *m)
 // {
 //     Mat4x4 *transposed = calloc(1, sizeof(Mat4x4));
 //     for (int i = 0; i < 4; i++)
@@ -379,6 +374,26 @@ void translate(Tri3d *tri, float offset)
     tri_trans.v[2].z = tri -> v[2].z + offset;
 
     *tri = tri_trans;
+}
+
+void calculate_normals(Tri3d *tri)
+{
+    Vert3d line1, line2;
+    line1.x = tri -> v[1].x - tri -> v[0].x;
+    line1.y = tri -> v[1].y - tri -> v[0].y;
+    line1.z = tri -> v[1].z - tri -> v[0].z;
+    
+    line2.x = tri -> v[2].x - tri -> v[0].x;
+    line2.y = tri -> v[2].y - tri -> v[0].y;
+    line2.z = tri -> v[2].z - tri -> v[0].z;
+
+    tri -> n.x = line1.y * line2.z - line1.z * line2.y;
+    tri -> n.y = line1.z * line2.x - line1.x * line2.z;
+    tri -> n.z = line1.x * line2.y - line1.y * line2.x;
+
+    float len = sqrtf(tri -> n.x * tri -> n.x + tri -> n.y * tri -> n.y
+                        + tri -> n.z * tri -> n.z);
+    tri -> n.x /= len; tri -> n.y /= len; tri -> n.z /= len;
 }
 
 void project(Tri3d *tri, int W, int H)

@@ -146,6 +146,30 @@ void fill_tri(int x1, int y1, int x2, int y2, int x3, int y3, char value, int co
     }
 }
 
+int get_colour(float lum)
+{
+    int light_index = (int) (7.0f * lum);
+    switch (light_index)
+    {
+        case 0:
+            return GREY_80_P;
+        case 1:
+            return GREY_80_P;
+        case 2:
+            return GREY_70_P;
+        case 3:
+            return GREY_60_P;
+        case 4:
+            return GREY_50_P;
+        case 5:
+            return GREY_40_P;
+        case 6:
+            return GREY_20_P;
+        default:
+            return GREY_80_P;
+    }
+}
+
 // ------------------------------------------------------------------
 // SCREEN FUNCTIONS
 // ------------------------------------------------------------------
@@ -204,6 +228,21 @@ void setup_screen(void)
 
     // Create screen buffer
     create_buffer(&m_screen, getmaxx(stdscr), getmaxy(stdscr), ' ', 0);
+}
+
+void setup_colours(void)
+{
+    init_pair(WHITE_P, WHITE, WHITE);
+    init_pair(GREY_10_P, GREY_10, GREY_10);
+    init_pair(GREY_20_P, GREY_20, GREY_20);
+    init_pair(GREY_30_P, GREY_30, GREY_30);
+    init_pair(GREY_40_P, GREY_40, GREY_40);
+    init_pair(GREY_50_P, GREY_50, GREY_50);
+    init_pair(GREY_60_P, GREY_60, GREY_60);
+    init_pair(GREY_70_P, GREY_70, GREY_70);
+    init_pair(GREY_80_P, GREY_80, GREY_80);
+    init_pair(GREY_90_P, GREY_90, GREY_90);
+    init_pair(BLACK_P, BLACK, BLACK);
 }
 
 void show_screen(void)
