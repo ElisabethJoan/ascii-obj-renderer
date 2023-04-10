@@ -24,11 +24,23 @@ typedef struct Tri3d
     Vert3d n;
 } Tri3d;
 
-typedef struct TriMesh3d 
+typedef struct TriMesh3d
 {
     Tri3d *tris;
     int tri_count;
 } TriMesh3d;
+
+typedef struct Quad3d
+{
+    Vert3d v[4];
+    Vert3d n;
+} Quad3d;
+
+typedef struct QuadMesh3d
+{
+    Quad3d *quads;
+    int quad_count;
+} QuadMesh3d;
 
 typedef struct Mat4x4
 {

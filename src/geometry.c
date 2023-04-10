@@ -116,8 +116,15 @@ Data3d * read_obj(char *arg)
         {
             fscanf(fp, "%c", &c);
             if (c == ' ') {
-                fscanf(fp, "%d//%*d %d//%*d %d//%d\n", &facets[facet_count].a,
+                long pos = ftell(fp);
+                fscanf(fp, "%d/%*d/%*d %d/%*d/%*d %d/%*d/%d\n", &facets[facet_count].a,
                     &facets[facet_count].b, &facets[facet_count].c, &facets[facet_count].n);
+                if (facets[facet_count].a == 0 || facets[facet_count].b == 0 ||
+                    facets[facet_count].c == 0 || facets[facet_count].n == 0) {
+                    fseek(fp, pos, SEEK_SET);
+                    fscanf(fp, "%d//%*d %d//%*d %d//%d\n", &facets[facet_count].a,
+                        &facets[facet_count].b, &facets[facet_count].c, &facets[facet_count].n);
+                }
                 facet_count++;
             }
         }
