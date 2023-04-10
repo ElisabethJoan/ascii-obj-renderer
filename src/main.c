@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
         count++;
     }
     #else
-    Vert3d *vCamera = calloc(1, sizeof(Vert3d));
+    Vert3d *camera = calloc(1, sizeof(Vert3d));
 
     setup_screen();
     W = screen_width();
@@ -48,7 +48,6 @@ int main(int argc, char *argv[])
 
     while(1)
     {
-        clear_screen();
         temp = getch();
         if (temp != -1)
         {
@@ -81,7 +80,7 @@ int main(int argc, char *argv[])
             default:
                 break;
         }
-
+        clear_screen();
         for (int i = 0; i < tri_count; i++)
         {
             Tri3d tri = mesh -> tris[i];
@@ -89,24 +88,39 @@ int main(int argc, char *argv[])
             pitch(&tri, y_theta);
             yaw(&tri, z_theta);
 
+            // World Matrix Transform
             translate(&tri, TRANSLATION_CONST);
+            // Calculate triangle Normal
             calculate_normals(&tri);
 
-            if (tri.n.x * (tri.v[0].x - vCamera -> x) + 
-                tri.n.y * (tri.v[0].y - vCamera -> y) +
-                tri.n.z * (tri.v[0].z - vCamera -> z) < 0.0f)
+            // Get Ray from triangle to camera
+            Vert3d ray = { tri.v[0].x - camera -> x, tri.v[0].y - camera -> y, tri.v[0].z - camera -> z };
+            float ray_dist = tri.n.x * ray.x + tri.n.y * ray.y + tri.n.z * ray.z;
+
+            if (ray_dist < 0.0f)
             {
-                Vert3d light_dir = { 0.0f, 0.0f, -1.0f };
+                Vert3d light_dir = { 0.0f, 1.0f, -1.0f };
                 float len = sqrtf(light_dir.x * light_dir.x + light_dir.y * light_dir.y 
                                     + light_dir.z * light_dir.z);
                 light_dir.x /= len; light_dir.y /= len; light_dir.z /= len;
 
-                float rel_dist = tri.n.x * light_dir.x + tri.n.y * light_dir.y 
-                                    + tri.n.z * light_dir.z;
+                float rel_dist = fmax(0.1f, tri.n.x * light_dir.x + tri.n.y * light_dir.y
+                                    + tri.n.z * light_dir.z);
 
                 if (!DEBUG)
                 {
+                    // Transform
+
+                    // View
+
+                    // Clip
+
+                    // Project
                     project(&tri, W, H);
+
+                    // Sort
+
+                    // Clip?
 
                     fill_tri(tri.v[0].x, tri.v[0].y,
                         tri.v[1].x, tri.v[1].y,
