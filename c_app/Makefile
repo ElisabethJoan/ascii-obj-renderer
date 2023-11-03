@@ -7,8 +7,8 @@ SRC := $(wildcard $(SRC_DIR)/*.c)
 OBJ := $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC))
 
 CC     := gcc
-CFLAGS := -g -Wall -Werror
-LDLIBS := -lncurses -lm
+CFLAGS := -g -Wall
+LDLIBS := -lSDL2 -lSDL2_ttf -lm
 
 .PHONY: all clean
 
