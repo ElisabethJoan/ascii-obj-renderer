@@ -1,6 +1,6 @@
-#include <stdlib.h>
-#include <string.h>
-#include <ncurses.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
+
 #include "graphics.h"
 
 #define ABS(x) (((x) >= 0) ? (x) : -(x))
@@ -8,22 +8,38 @@
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define SWAP(x,y) do { (x)=(x)^(y); (y)=(x)^(y); (x)=(x)^(y); } while(0)
 
-Screen *m_screen = NULL;
+GridCell *grid;
+SDL_Window *window;
+SDL_Renderer *renderer;
+TTF_Font *font;
+SDL_Color bg = { 22, 22, 22, 255 };
+SDL_Color fg = { 255, 255, 255, 255 };
+
+int window_w;
+int window_h;
+// int grid_w = 83;
+// int grid_h = 28;
+int grid_w = 100;
+int grid_h = 33;
+int grid_cell_w = 0;
+int grid_cell_h = 0;    
 
 // ------------------------------------------------------------------
 // DRAW FUNCTIONS
 // ------------------------------------------------------------------
 
-void draw_char(int x, int y, char value, int colour)
+void draw_char(int x, int y, char value, SDL_Color *fg, SDL_Color *bg)
 {
-    if (x >= 0 && x < m_screen -> width && y >= 0 && y < m_screen -> height)
+    if (x >= 0 && x < window_w && y >= 0 && y < window_h)
     {
-        m_screen -> pixels[y][x] = value;
-        m_screen -> colours[y][x] = colour;
+        GridCell *cell = &grid[x + grid_w * y];
+        cell -> c = '*';
+        cell -> fg = fg;
+        cell -> bg = bg;
     }
 }
 
-void draw_line(int x1, int y1, int x2, int y2, char value, int colour)
+void draw_line(int x1, int y1, int x2, int y2, char value, SDL_Color *fg, SDL_Color *bg)
 {
     if (x1 == x2)
     {
@@ -33,7 +49,7 @@ void draw_line(int x1, int y1, int x2, int y2, char value, int colour)
 
         for (int i = y_min; i <= y_max; i++)
         {
-            draw_char(x1, i, value, colour);
+            draw_char(x1, i, value, fg, bg);
         }
     }
     else if (y1 == y2)
@@ -44,7 +60,7 @@ void draw_line(int x1, int y1, int x2, int y2, char value, int colour)
 
         for (int i = x_min; i <= x_max; i++)
         {
-            draw_char(i, y1, value, colour);
+            draw_char(i, y1, value, fg, bg);
         }
     }
     else
@@ -67,11 +83,11 @@ void draw_line(int x1, int y1, int x2, int y2, char value, int colour)
 
         for (int x = x1, y = y1; (dx > 0) ? x <= x2 : x >= x2; (dx > 0) ? x++ : x--)
         {
-            draw_char(x, y, value, colour);
+            draw_char(x, y, value, fg, bg);
             err += derr;
             while (err >= 0.5f && ((dy > 0) ? y <= y2 : y >= y2))
             {
-                draw_char(x, y, value, colour);
+                draw_char(x, y, value, fg, bg);
                 y += (dy > 0) - (dy < 0);
 
                 err -= 1.0f;
@@ -80,14 +96,14 @@ void draw_line(int x1, int y1, int x2, int y2, char value, int colour)
     }
 }
 
-void draw_tri(int x1, int y1, int x2, int y2, int x3, int y3, char value, int colour)
+void draw_tri(int x1, int y1, int x2, int y2, int x3, int y3, char value, SDL_Color *fg, SDL_Color *bg)
 {
-    draw_line(x1, y1, x2, y2, value, colour);
-    draw_line(x2, y2, x3, y3, value, colour);
-    draw_line(x3, y3, x1, y1, value, colour);
+    draw_line(x1, y1, x2, y2, value, fg, bg);
+    draw_line(x2, y2, x3, y3, value, fg, bg);
+    draw_line(x3, y3, x1, y1, value, fg, bg);
 }
 
-void fill_tri(int x1, int y1, int x2, int y2, int x3, int y3, char value, int colour)
+void fill_tri(int x1, int y1, int x2, int y2, int x3, int y3, char value, SDL_Color *fg, SDL_Color *bg)
 {
     int a, b, y, last;
     // Sort coordinates by in desc order of y (y3 >= y2 >= y1)
@@ -115,7 +131,7 @@ void fill_tri(int x1, int y1, int x2, int y2, int x3, int y3, char value, int co
         {
             b = x3;
         }
-        draw_line(a, y1, b, y1, value, colour);
+        draw_line(a, y1, b, y1, value, fg, bg);
         return;
     }
 
@@ -131,42 +147,73 @@ void fill_tri(int x1, int y1, int x2, int y2, int x3, int y3, char value, int co
         last = y2 - 1;
     }
 
-    for(y = y1; y <= last; y++) {
+    for(y = y1; y <= last; y++) 
+    {
         a = x1 + (x2 - x1) * (y - y1) / (y2 - y1);
         b = x1 + (x3 - x1) * (y - y1) / (y3 - y1);
-        draw_line(a, y, b, y, value, colour);
+        draw_line(a, y, b, y, value, fg, bg);
     }
 
     // For lower part of triangle, find scanline crossings for segment
     // 0-2 and 1-2.  This loop is skipped if y1=y2
-    for(; y <= y3; y++) {
+    for(; y <= y3; y++) 
+    {
         a = x2 + (x3 - x2) * (y - y2) / (y3 - y2);
         b = x1 + (x3 - x1) * (y - y1) / (y3 - y1);
-        draw_line(a, y, b, y, value, colour);
+        draw_line(a, y, b, y, value, fg, bg);
     }
 }
 
-int get_colour(float lum)
+SDL_Color* get_colour(float lum)
 {
     int light_index = (int) (7.0f * lum);
+    SDL_Color *colour;
+    colour = calloc(1, sizeof(SDL_Color));
     switch (light_index)
     {
         case 0:
-            return GREY_80_P;
         case 1:
-            return GREY_80_P;
+            colour -> r = 60;
+            colour -> g = 60;
+            colour -> b = 60;
+            colour -> a = 255;
+            return colour;
         case 2:
-            return GREY_70_P;
+            colour -> r = 100;
+            colour -> g = 100;
+            colour -> b = 100;
+            colour -> a = 255;
+            return colour;
         case 3:
-            return GREY_60_P;
+            colour -> r = 150;
+            colour -> g = 150;
+            colour -> b = 150;
+            colour -> a = 255;
+            return colour;
         case 4:
-            return GREY_50_P;
+            colour -> r = 200;
+            colour -> g = 200;
+            colour -> b = 200;
+            colour -> a = 255;
+            return colour;
         case 5:
-            return GREY_40_P;
+            colour -> r = 230;
+            colour -> g = 230;
+            colour -> b = 230;
+            colour -> a = 255;
+            return colour;
         case 6:
-            return GREY_20_P;
+            colour -> r = 240;
+            colour -> g = 240;
+            colour -> b = 240;
+            colour -> a = 255;
+            return colour;
         default:
-            return GREY_80_P;
+            colour -> r = 60;
+            colour -> g = 60;
+            colour -> b = 60;
+            colour -> a = 255;
+            return colour;
     }
 }
 
@@ -174,120 +221,123 @@ int get_colour(float lum)
 // SCREEN FUNCTIONS
 // ------------------------------------------------------------------
 
-static void create_buffer(Screen **old_screen, int width, int height, char value, int colour)
+void setup_screen(void)
 {
-    Screen *new_screen = calloc(1, sizeof(Screen));
+    int grid_size = grid_w * grid_h;
 
-    // Set Screen Dimensions
-    new_screen -> width = width;
-    new_screen -> height = height;
-
-    // Allocate memory to screen buffer
-    void **pixel_buffer = calloc(height, sizeof(void *));
-    void **colour_buffer = calloc(height, sizeof(void *));
-    pixel_buffer[0] = calloc(width * height, sizeof(char));
-    colour_buffer[0] = calloc(width * height, sizeof(int));
-
-    for (int y = 1; y < height; y++)
+    grid = calloc((size_t)grid_size, sizeof(GridCell));
+    
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) 
     {
-        pixel_buffer[y] = (char *) pixel_buffer[y - 1] + width * sizeof(char);
-        colour_buffer[y] = (char *) colour_buffer[y - 1] + width * sizeof(int);
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Initialize SDL: %s", SDL_GetError());
+      return;
+    }
+    if (TTF_Init() < 0)
+    {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Initialize SDL_ttf: %s", TTF_GetError());
+      return;
     }
 
-    // Fill allocated memory with space/blank character
-    memset(pixel_buffer[0], value, width * height * sizeof(char));
-    new_screen -> pixels = (char **) pixel_buffer;
-    memset(colour_buffer[0], colour, width * height * sizeof(int));
-    new_screen -> colours = (int **) colour_buffer;
+    font = TTF_OpenFont("assets/FiraMono-Regular.ttf", 14);
+    if (font == NULL)
+    { 
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Open Font: %s", TTF_GetError());
+      return;
+    }
+    if (TTF_SizeText(font, " ", &grid_cell_w, &grid_cell_h) < 0)
+    { 
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Get text metrics: %s", TTF_GetError());
+      return;
+    }
+    
+    SDL_Cursor *cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+    if (cursor == NULL)
+    {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Get the system hand cursor: %s", SDL_GetError());
+      return;
+    }
+    SDL_SetCursor(cursor);
 
-    *old_screen = new_screen;
-}
-
-void setup_screen(void) 
-{
-    // Initialize curses mode
-    initscr();
-
-    // Turn on coloured
-    start_color();
-
-    // Do not echo keypresses
-    noecho();
-
-    // Turn off cursor
-    curs_set(0);
-
-    // Make typed chars immediately available
-    cbreak();
-
-    // Causes getch to be non-blocking
-    nodelay(stdscr, TRUE);
-
-    // Clear potentially lingering state of screen
-    clear();
-
-    // Create screen buffer
-    create_buffer(&m_screen, getmaxx(stdscr), getmaxy(stdscr), ' ', 0);
-}
-
-void setup_colours(void)
-{
-    init_pair(WHITE_P, WHITE, WHITE);
-    init_pair(GREY_10_P, GREY_10, GREY_10);
-    init_pair(GREY_20_P, GREY_20, GREY_20);
-    init_pair(GREY_30_P, GREY_30, GREY_30);
-    init_pair(GREY_40_P, GREY_40, GREY_40);
-    init_pair(GREY_50_P, GREY_50, GREY_50);
-    init_pair(GREY_60_P, GREY_60, GREY_60);
-    init_pair(GREY_70_P, GREY_70, GREY_70);
-    init_pair(GREY_80_P, GREY_80, GREY_80);
-    init_pair(GREY_90_P, GREY_90, GREY_90);
-    init_pair(BLACK_P, BLACK, BLACK);
+    window_w = grid_w * grid_cell_w;
+    window_h = grid_h * grid_cell_h;
+    if (SDL_CreateWindowAndRenderer(window_w, window_h, 0, &window, &renderer) < 0)
+    {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Create window and renderer: %s", SDL_GetError());
+      return;
+    }
+    SDL_SetWindowTitle(window, "3D ASCII Renderer");
 }
 
 void show_screen(void)
 {
-    char **new_pixels = m_screen -> pixels;
-    int **new_colour = m_screen -> colours;
-    int width = m_screen -> width;
-    int height = m_screen -> height;
+    SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, bg.a);
+    SDL_RenderClear(renderer);
+    SDL_Rect dest = {
+        .x = 0,
+        .y = 0,
+        .w = grid_cell_w,
+        .h = grid_cell_h,
+    };
 
-    for (int y = 0; y < height; y++)
+    for (int x = 0; x < grid_w; x++)
     {
-        for (int x = 0; x < width; x++)
+        for (int y = 0; y < grid_h; y++)
         {
-            attron(new_colour[y][x]);
-            mvaddch(y, x, new_pixels[y][x]);
-            attroff(new_colour[y][x]);
+            dest.x = grid_cell_w * x;
+            dest.y = grid_cell_h * y;
+
+            GridCell *cell = &grid[x + grid_w * y];
+
+            SDL_Surface *surface = TTF_RenderGlyph_Shaded(font, (Uint16) cell -> c, *cell -> fg, *cell -> bg);
+
+            SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+            
+            SDL_SetRenderDrawColor(renderer, cell -> bg -> r, cell -> bg -> g, cell -> bg -> b, cell -> bg -> a);
+
+            SDL_RenderFillRect(renderer, &dest);
+
+            SDL_RenderCopy(renderer, texture, NULL, &dest);
+
+            SDL_DestroyTexture(texture);
+            SDL_FreeSurface(surface);
         }
     }
-    refresh();
+
+    SDL_RenderPresent(renderer);
 }
 
 void clear_screen(void)
 {
-    if (m_screen != NULL) {
-        int W = screen_width();
-        int H = screen_height();
-
-        char *screen_pixels = m_screen -> pixels[0];
-        int *colours = m_screen -> colours[0];
-
-        memset(screen_pixels, ' ', W * H);
-
-        for (int i = 0; i < W * H; i++)
+    for (int x = 0; x < grid_w; x++)
+    {
+        for (int y = 0; y < grid_h; y++)
         {
-            colours[i] = 0;
+            GridCell *cell = &grid[x + grid_w * y];
+            cell -> c = ' ';
+            cell -> fg = &fg;
+            cell -> bg = &bg;
         }
     }
 }
 
-int screen_width(void)
+void exit_app(void)
 {
-    return m_screen -> width;
+    free(grid);
+
+    TTF_CloseFont(font);
+    TTF_Quit();
+
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
 }
 
-int screen_height(void)
+int grid_width(void)
 {
-    return m_screen -> height;
+  return grid_w;
+}
+
+int grid_height(void)
+{
+  return grid_h;
 }
