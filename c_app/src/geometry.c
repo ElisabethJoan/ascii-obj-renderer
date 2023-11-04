@@ -1,5 +1,5 @@
+#include <stdio.h>
 #include <stdlib.h>
-#include <curses.h>
 #include <math.h>
 #include "geometry.h"
 
@@ -398,8 +398,7 @@ void calculate_normals(Tri3d *tri)
     tri -> n.y = line1.z * line2.x - line1.x * line2.z;
     tri -> n.z = line1.x * line2.y - line1.y * line2.x;
 
-    float len = sqrtf(tri -> n.x * tri -> n.x + tri -> n.y * tri -> n.y
-                        + tri -> n.z * tri -> n.z);
+    float len = sqrtf(tri -> n.x * tri -> n.x + tri -> n.y * tri -> n.y + tri -> n.z * tri -> n.z);
     tri -> n.x /= len; tri -> n.y /= len; tri -> n.z /= len;
 }
 

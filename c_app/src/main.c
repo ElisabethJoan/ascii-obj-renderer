@@ -1,123 +1,161 @@
+#include <stdbool.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <math.h>
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 #include "graphics.h"
 #include "geometry.h"
 
 #define ROTATION_CONST 0.05f
-#define TRANSLATION_CONST 2.0f
+#define TRANSLATION_CONST 3.0f
 
+void handle_events(void);
+
+SDL_bool done = SDL_FALSE;
+SDL_Event event;
 SDL_Color bgm = { 22, 22, 22, 255 };
+
+Data3d *obj_data;
+TriMesh3d *mesh;
+Vert3d *camera;
+
+float x_theta = 0;
+float y_theta = 0;
+float z_theta = 0;
+
+int tri_count = 0;
+int W = 0;
+int H = 0;
+
+void init()
+{
+    W = grid_width();
+    H = grid_height();
+
+    obj_data = read_obj("assets/cube.obj");
+    mesh = populate_trimesh(obj_data);
+    camera = calloc(1, sizeof(Vert3d));
+
+    setup_screen();
+
+    tri_count = mesh -> tri_count;
+}
+
+void main_loop(void)
+{
+    handle_events();
+    clear_screen();
+    for (int i = 0; i < tri_count; i++)
+    {
+        Tri3d tri = mesh -> tris[i];
+        roll(&tri, x_theta);
+        pitch(&tri, y_theta);
+        yaw(&tri, z_theta);
+
+        // World Matrix Transform
+        translate(&tri, TRANSLATION_CONST);
+        // Calculate triangle Normal
+        calculate_normals(&tri);
+
+        // Get Ray from triangle to camera
+        Vert3d ray = { tri.v[0].x - camera -> x, tri.v[0].y - camera -> y, tri.v[0].z - camera -> z };
+        float ray_dist = tri.n.x * ray.x + tri.n.y * ray.y + tri.n.z * ray.z;
+
+        if (ray_dist < 0.0f)
+        {
+            Vert3d light_dir = { 0.0f, 1.0f, -1.0f };
+            float len = sqrtf(light_dir.x * light_dir.x + light_dir.y * light_dir.y + light_dir.z * light_dir.z);
+            light_dir.x /= len; light_dir.y /= len; light_dir.z /= len;
+
+            float rel_dist = fmax(0.1f, tri.n.x * light_dir.x + tri.n.y * light_dir.y + tri.n.z * light_dir.z);
+
+            // Transform
+
+            // View
+
+            // Clip
+            
+            // Project
+            project(&tri, W, H);
+            
+            // Sort
+
+            // Clip?
+
+            // fill_tri(tri.v[0].x, tri.v[0].y,
+            //     tri.v[1].x, tri.v[1].y,
+            //     tri.v[2].x, tri.v[2].y, '*', get_colour(rel_dist), &bgm);
+            draw_tri(tri.v[0].x, tri.v[0].y,
+                tri.v[1].x, tri.v[1].y,
+                tri.v[2].x, tri.v[2].y, '*', get_colour(rel_dist), &bgm); 
+        }
+    }
+    show_screen();
+}
 
 int main(int argc, char *argv[])
 {
-    Data3d *obj_data = read_obj(argv[1]);
-    TriMesh3d *mesh = populate_trimesh(obj_data);
-    Vert3d *camera = calloc(1, sizeof(Vert3d));
-   
-    setup_screen();
-    int W = grid_width();
-    int H = grid_height();
+    init();
+    #ifdef __EMSCRIPTEN__
+        emscripten_set_main_loop(main_loop, 0, 1);
+    #endif
 
-    float x_theta, y_theta, z_theta;
-    x_theta = y_theta = z_theta = 0;
-    int tri_count = mesh -> tri_count;
-    SDL_bool done = SDL_FALSE;
-    while (!done)
-    {
-        SDL_Event event;
-        while (SDL_PollEvent(&event))
+    #ifndef __EMSCRIPTEN__
+        while (!done)
         {
-            switch (event.type)
-            {
-                case SDL_KEYDOWN:
-                    switch (event.key.keysym.sym)
-                    {
-                        case SDLK_w:
-                        case SDLK_UP:
-                            x_theta -= ROTATION_CONST;
-                            break;
-                        case SDLK_s:
-                        case SDLK_DOWN:
-                            x_theta += ROTATION_CONST;
-                            break;
-                        case SDLK_a:
-                        case SDLK_LEFT:
-                            y_theta -= ROTATION_CONST;
-                            break;
-                        case SDLK_d:
-                        case SDLK_RIGHT:
-                            y_theta += ROTATION_CONST;
-                            break;
-                        case SDLK_q:
-                            z_theta -= ROTATION_CONST;
-                            break;
-                        case SDLK_e:
-                            z_theta += ROTATION_CONST;
-                            break;
-                        case SDLK_r:
-                            x_theta = y_theta = z_theta = 0;
-                            break;
-                    }
-                    break;
-                case SDL_QUIT:
-                    done = SDL_TRUE;
-                    break;
-            }
+            main_loop();
         }
-        clear_screen();
+    #endif
 
-        for (int i = 0; i < tri_count; i++)
-        {
-            Tri3d tri = mesh -> tris[i];
-            roll(&tri, x_theta);
-            pitch(&tri, y_theta);
-            yaw(&tri, z_theta);
-
-            // World Matrix Transform
-            translate(&tri, TRANSLATION_CONST);
-            // Calculate triangle Normal
-            calculate_normals(&tri);
-
-            // Get Ray from triangle to camera
-            Vert3d ray = { tri.v[0].x - camera -> x, tri.v[0].y - camera -> y, tri.v[0].z - camera -> z };
-            float ray_dist = tri.n.x * ray.x + tri.n.y * ray.y + tri.n.z * ray.z;
-
-            if (ray_dist < 0.0f)
-            {
-                Vert3d light_dir = { 0.0f, 1.0f, -1.0f };
-                float len = sqrtf(light_dir.x * light_dir.x + light_dir.y * light_dir.y 
-                                    + light_dir.z * light_dir.z);
-                light_dir.x /= len; light_dir.y /= len; light_dir.z /= len;
-
-                float rel_dist = fmax(0.1f, tri.n.x * light_dir.x + tri.n.y * light_dir.y + tri.n.z * light_dir.z);
-
-                // Transform
-
-                // View
-
-                // Clip
-
-                // Project
-                project(&tri, W, H);
-
-                // Sort
-
-                // Clip?
-
-                fill_tri(tri.v[0].x, tri.v[0].y,
-                    tri.v[1].x, tri.v[1].y,
-                    tri.v[2].x, tri.v[2].y, '*', get_colour(rel_dist), &bgm);
-                // draw_tri(tri.v[0].x, tri.v[0].y,
-                //     tri.v[1].x, tri.v[1].y,
-                //     tri.v[2].x, tri.v[2].y, '*', &fg, &bg);
-            }
-        }
-        show_screen();
-    }
     exit_app();
     return 0;
+}
+
+void handle_events(void)
+{
+    while (SDL_PollEvent(&event))
+    {
+        switch (event.type)
+        {
+            case SDL_KEYDOWN:
+                switch (event.key.keysym.sym)
+                {
+                    case SDLK_w:
+                    case SDLK_UP:
+                        x_theta -= ROTATION_CONST;
+                        break;
+                    case SDLK_s:
+                    case SDLK_DOWN:
+                        x_theta += ROTATION_CONST;
+                        break;
+                    case SDLK_a:
+                    case SDLK_LEFT:
+                        y_theta -= ROTATION_CONST;
+                        break;
+                    case SDLK_d:
+                    case SDLK_RIGHT:
+                        y_theta += ROTATION_CONST;
+                        break;
+                    case SDLK_q:
+                        z_theta -= ROTATION_CONST;
+                        break;
+                    case SDLK_e:
+                        z_theta += ROTATION_CONST;
+                        break;
+                    case SDLK_r:
+                        x_theta = y_theta = z_theta = 0;
+                        break;
+                }
+                break;
+            case SDL_QUIT:
+                done = SDL_TRUE;
+                break;
+        }
+    }
 }
 
 
