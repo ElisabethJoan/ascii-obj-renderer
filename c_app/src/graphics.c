@@ -17,10 +17,8 @@ SDL_Color fg = { 255, 255, 255, 255 };
 
 int window_w;
 int window_h;
-// int grid_w = 83;
-// int grid_h = 28;
-int grid_w = 100;
-int grid_h = 33;
+int grid_w = 83;
+int grid_h = 28;
 int grid_cell_w = 0;
 int grid_cell_h = 0;    
 
@@ -221,10 +219,9 @@ SDL_Color* get_colour(float lum)
 // SCREEN FUNCTIONS
 // ------------------------------------------------------------------
 
-void setup_screen(void)
-{
+void setup_screen()
+{   
     int grid_size = grid_w * grid_h;
-
     grid = calloc((size_t)grid_size, sizeof(GridCell));
     
     if (SDL_Init(SDL_INIT_VIDEO) < 0) 
@@ -287,7 +284,7 @@ void show_screen(void)
             dest.y = grid_cell_h * y;
 
             GridCell *cell = &grid[x + grid_w * y];
-
+            
             SDL_Surface *surface = TTF_RenderGlyph_Shaded(font, (Uint16) cell -> c, *cell -> fg, *cell -> bg);
 
             SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
