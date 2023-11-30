@@ -402,23 +402,8 @@ void calculate_normals(Tri3d *tri)
     tri -> n.x /= len; tri -> n.y /= len; tri -> n.z /= len;
 }
 
-void project(Tri3d *tri, int W, int H)
+void project(Tri3d *tri, Mat4x4 *mat_proj, int W, int H)
 {
-    float f_near = 0.1f;
-    float f_far = 1000.0f;
-    float f_fov = 90.0f;
-    float f_aspect_ratio = (float) H / (float) W;
-    float f_fov_rad = 1.0f / tanf(f_fov * 0.5f / 180.0f * 3.14159f);
-
-    Mat4x4 *mat_proj = calloc(1, sizeof(Mat4x4));
-
-    mat_proj -> m[0][0] = f_aspect_ratio * f_fov_rad;
-    mat_proj -> m[1][1] = f_fov_rad;
-    mat_proj -> m[2][2] = f_far / (f_far - f_near);
-    mat_proj -> m[3][2] = (-f_far * f_near) / (f_far - f_near);
-    mat_proj -> m[2][3] = 1.0f;
-    mat_proj -> m[3][3] = 0.0f;
-
     Tri3d tri_proj;
     tri_proj.v[0] = multiple_matrix_vector(mat_proj, tri -> v[0]);
     tri_proj.v[1] = multiple_matrix_vector(mat_proj, tri -> v[1]);
@@ -435,6 +420,23 @@ void project(Tri3d *tri, int W, int H)
     tri_proj.v[2].x *= 0.5f * W;
     tri_proj.v[2].y *= 0.5f * H;
     *tri = tri_proj;
+}
 
-    free(mat_proj);
+Mat4x4* make_projection_matrix(int height, int width) {
+    float f_near = 0.1f;
+    float f_far = 1000.0f;
+    float f_fov = 90.0f;
+    float f_aspect_ratio = (float) height / (float) width;
+    float f_fov_rad = 1.0f / tanf(f_fov * 0.5f / 180.0f * 3.14159f);
+
+    Mat4x4 *mat_proj = calloc(1, sizeof(Mat4x4));
+
+    mat_proj -> m[0][0] = f_aspect_ratio * f_fov_rad;
+    mat_proj -> m[1][1] = f_fov_rad;
+    mat_proj -> m[2][2] = f_far / (f_far - f_near);
+    mat_proj -> m[3][2] = (-f_far * f_near) / (f_far - f_near);
+    mat_proj -> m[2][3] = 1.0f;
+    mat_proj -> m[3][3] = 0.0f;
+
+    return mat_proj;
 }
