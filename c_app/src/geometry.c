@@ -180,7 +180,7 @@ TriMesh3d * populate_trimesh(Data3d *obj_data)
 // MATH FUNCTIONS
 // ------------------------------------------------------------------
 
-static Vert3d multiple_matrix_vector(Mat4x4 *m, Vert3d v) 
+Vert3d matrix_vector_product(Mat4x4 *m, Vert3d v) 
 {
     Vert3d o;
 
@@ -195,6 +195,20 @@ static Vert3d multiple_matrix_vector(Mat4x4 *m, Vert3d v)
     }
 
     return o;
+}
+
+Mat4x4 * matrix_multiplication(Mat4x4 *m1, Mat4x4 *m2)
+{
+    Mat4x4 *matrix = calloc(1, sizeof(Mat4x4));
+    for (int c = 0; c < 4; c++)
+    {
+        for (int r = 0; r < 4; r++)
+        {
+            matrix -> m[r][c] = m1 -> m[r][0] * m2 -> m[0][c] + m1 -> m[r][1] * m2 -> m[1][c] + m1 -> m[r][2] * m2 -> m[2][c] + m1 -> m[r][3] * m2 -> m[3][c];
+        }
+    }
+
+    return matrix;
 }
 
 // static Mat4x4 * cofactor(Mat4x4 *m, int p, int q, int n)
@@ -298,7 +312,7 @@ static Vert3d multiple_matrix_vector(Mat4x4 *m, Vert3d v)
 //     return transposed;
 // }
 
-void roll(Tri3d *tri, float f_theta)
+Mat4x4 * make_x_rotation(float f_theta)
 {
     Mat4x4 *mat_rot_x = calloc(1, sizeof(Mat4x4));
     mat_rot_x -> m[0][0] = 1;
@@ -308,23 +322,11 @@ void roll(Tri3d *tri, float f_theta)
     mat_rot_x -> m[2][2] = cosf(f_theta);
     mat_rot_x -> m[3][3] = 1;
 
-    // Mat4x4 *mat_inverse = calloc(1, sizeof(Mat4x4));
-    // mat_inverse = inverse(mat_rot_x);
-    // Mat4x4 *mat_transpose = calloc(1, sizeof(Mat4x4));
-    // mat_transpose = transpose(mat_inverse);
-
-    Tri3d tri_rot_x;
-    tri_rot_x.v[0] = multiple_matrix_vector(mat_rot_x, tri -> v[0]);
-    tri_rot_x.v[1] = multiple_matrix_vector(mat_rot_x, tri -> v[1]);
-    tri_rot_x.v[2] = multiple_matrix_vector(mat_rot_x, tri -> v[2]);
-    // tri_rot_x.n = multiple_matrix_vector(mat_transpose, tri -> n);
-    *tri = tri_rot_x;
-
-    free(mat_rot_x);
+    return mat_rot_x;
 }
 
-void pitch(Tri3d *tri, float f_theta) 
-{
+Mat4x4 * make_y_rotation(float f_theta) 
+{ 
     Mat4x4 *mat_rot_y = calloc(1, sizeof(Mat4x4));
     mat_rot_y -> m[0][0] = cosf(f_theta);
     mat_rot_y -> m[0][2] = sinf(f_theta);
@@ -333,22 +335,10 @@ void pitch(Tri3d *tri, float f_theta)
     mat_rot_y -> m[2][2] = cosf(f_theta);
     mat_rot_y -> m[3][3] = 1;
 
-    // Mat4x4 *mat_inverse = calloc(1, sizeof(Mat4x4));
-    // mat_inverse = inverse(mat_rot_y);
-    // Mat4x4 *mat_transpose = calloc(1, sizeof(Mat4x4));
-    // mat_transpose = transpose(mat_inverse);
-
-    Tri3d tri_rot_y;
-    tri_rot_y.v[0] = multiple_matrix_vector(mat_rot_y, tri -> v[0]);
-    tri_rot_y.v[1] = multiple_matrix_vector(mat_rot_y, tri -> v[1]);
-    tri_rot_y.v[2] = multiple_matrix_vector(mat_rot_y, tri -> v[2]);
-    // tri_rot_y.n = multiple_matrix_vector(mat_transpose, tri -> n);
-    *tri = tri_rot_y;
-
-    free(mat_rot_y);
+    return mat_rot_y;
 }
 
-void yaw(Tri3d *tri, float f_theta)
+Mat4x4 * make_z_rotation(float f_theta)
 {
     Mat4x4 *mat_rot_z = calloc(1, sizeof(Mat4x4));
     mat_rot_z -> m[0][0] = cosf(f_theta);
@@ -358,29 +348,41 @@ void yaw(Tri3d *tri, float f_theta)
     mat_rot_z -> m[2][2] = 1;
     mat_rot_z -> m[3][3] = 1;
 
-    // Mat4x4 *mat_inverse = calloc(1, sizeof(Mat4x4));
-    // mat_inverse = inverse(mat_rot_z);
-    // Mat4x4 *mat_transpose = calloc(1, sizeof(Mat4x4));
-    // mat_transpose = transpose(mat_inverse);
-
-    Tri3d tri_rot_z;
-    tri_rot_z.v[0] = multiple_matrix_vector(mat_rot_z, tri -> v[0]);
-    tri_rot_z.v[1] = multiple_matrix_vector(mat_rot_z, tri -> v[1]);
-    tri_rot_z.v[2] = multiple_matrix_vector(mat_rot_z, tri -> v[2]);
-    // tri_rot_z.n = multiple_matrix_vector(mat_transpose, tri -> n);
-    *tri = tri_rot_z;
-
-    free(mat_rot_z);
+    return mat_rot_z;
 }
 
-void translate(Tri3d *tri, float offset)
+Mat4x4 * make_projection_matrix(int height, int width)
 {
-    Tri3d tri_trans;
-    tri_trans.v[0].z = tri -> v[0].z + offset;
-    tri_trans.v[1].z = tri -> v[1].z + offset;
-    tri_trans.v[2].z = tri -> v[2].z + offset;
+    float f_near = 0.1f;
+    float f_far = 1000.0f;
+    float f_fov = 90.0f;
+    float f_aspect_ratio = (float) height / (float) width;
+    float f_fov_rad = 1.0f / tanf(f_fov * 0.5f / 180.0f * 3.14159f);
 
-    *tri = tri_trans;
+    Mat4x4 *mat_proj = calloc(1, sizeof(Mat4x4));
+
+    mat_proj -> m[0][0] = f_aspect_ratio * f_fov_rad;
+    mat_proj -> m[1][1] = f_fov_rad;
+    mat_proj -> m[2][2] = f_far / (f_far - f_near);
+    mat_proj -> m[3][2] = (-f_far * f_near) / (f_far - f_near);
+    mat_proj -> m[2][3] = 1.0f;
+    mat_proj -> m[3][3] = 0.0f;
+
+    return mat_proj;
+}
+
+Mat4x4 * make_translation_matrix(float z)
+{
+    Mat4x4 *mat_trans = calloc(1, sizeof(Mat4x4));
+    mat_trans -> m[0][0] = 1.0f;
+	  mat_trans -> m[1][1] = 1.0f;
+	  mat_trans -> m[2][2] = 1.0f;
+	  mat_trans -> m[3][3] = 1.0f;
+	  mat_trans -> m[3][0] = 0.0f;
+	  mat_trans -> m[3][1] = 0.0f;
+	  mat_trans -> m[3][2] = 3.0f;
+
+    return mat_trans;
 }
 
 void calculate_normals(Tri3d *tri)
@@ -405,9 +407,9 @@ void calculate_normals(Tri3d *tri)
 void project(Tri3d *tri, Mat4x4 *mat_proj, int W, int H)
 {
     Tri3d tri_proj;
-    tri_proj.v[0] = multiple_matrix_vector(mat_proj, tri -> v[0]);
-    tri_proj.v[1] = multiple_matrix_vector(mat_proj, tri -> v[1]);
-    tri_proj.v[2] = multiple_matrix_vector(mat_proj, tri -> v[2]);
+    tri_proj.v[0] = matrix_vector_product(mat_proj, tri -> v[0]);
+    tri_proj.v[1] = matrix_vector_product(mat_proj, tri -> v[1]);
+    tri_proj.v[2] = matrix_vector_product(mat_proj, tri -> v[2]);
 
     tri_proj.v[0].x += 1.0f; tri_proj.v[0].y += 1.0f;
     tri_proj.v[1].x += 1.0f; tri_proj.v[1].y += 1.0f;
@@ -422,21 +424,3 @@ void project(Tri3d *tri, Mat4x4 *mat_proj, int W, int H)
     *tri = tri_proj;
 }
 
-Mat4x4* make_projection_matrix(int height, int width) {
-    float f_near = 0.1f;
-    float f_far = 1000.0f;
-    float f_fov = 90.0f;
-    float f_aspect_ratio = (float) height / (float) width;
-    float f_fov_rad = 1.0f / tanf(f_fov * 0.5f / 180.0f * 3.14159f);
-
-    Mat4x4 *mat_proj = calloc(1, sizeof(Mat4x4));
-
-    mat_proj -> m[0][0] = f_aspect_ratio * f_fov_rad;
-    mat_proj -> m[1][1] = f_fov_rad;
-    mat_proj -> m[2][2] = f_far / (f_far - f_near);
-    mat_proj -> m[3][2] = (-f_far * f_near) / (f_far - f_near);
-    mat_proj -> m[2][3] = 1.0f;
-    mat_proj -> m[3][3] = 0.0f;
-
-    return mat_proj;
-}

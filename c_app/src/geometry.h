@@ -50,12 +50,16 @@ typedef struct Mat4x4
 Data3d * read_obj(char *arg);
 TriMesh3d * populate_trimesh(Data3d *obj_data);
 
-void roll(Tri3d *tri, float f_theta);
-void pitch(Tri3d *tri, float f_theta);
-void yaw(Tri3d *tri, float f_theta);
-void translate(Tri3d *tri, float offset);
+Vert3d matrix_vector_product(Mat4x4 *m, Vert3d v); 
+Mat4x4 * matrix_multiplication(Mat4x4 *m1, Mat4x4 *m2);
+
+Mat4x4 * make_x_rotation(float f_theta);
+Mat4x4 * make_y_rotation(float f_theta);
+Mat4x4 * make_z_rotation(float f_theta);
+Mat4x4 * make_projection_matrix(int height, int width);
+Mat4x4 * make_translation_matrix(float z);
+
 void calculate_normals(Tri3d *tri);
 void project(Tri3d *tri, Mat4x4 *mat_proj, int W, int H);
-Mat4x4* make_projection_matrix(int height, int width);
 
 #endif /* GEOMETRY_H_ */
