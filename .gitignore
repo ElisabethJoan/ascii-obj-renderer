@@ -56,6 +56,7 @@ dkms.conf
 *.obj
 
 **/bin/*
+**/web/*
 
 
 # React Ignores

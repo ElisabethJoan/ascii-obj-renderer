@@ -47,12 +47,14 @@ void init()
     tri_count = mesh -> tri_count;
 
     mat_proj = make_projection_matrix(H, W);
-    mat_trans = make_translation_matrix(3.0f);
+    mat_trans = make_translation_matrix(TRANSLATION_CONST);
 }
 
 void main_loop(void)
 {
     handle_events();
+    x_theta += ROTATION_CONST;
+    z_theta += ROTATION_CONST;
     clear_screen();
 
     Mat4x4 *mat_rot_x = make_x_rotation(x_theta); 
@@ -64,6 +66,9 @@ void main_loop(void)
     world_mat = matrix_multiplication(world_mat, mat_rot_z);
     world_mat = matrix_multiplication(world_mat, mat_trans);
 
+    free(mat_rot_x);
+    free(mat_rot_y);
+    free(mat_rot_z);
     for (int i = 0; i < tri_count; i++)
     {
         Tri3d *tri = calloc(1, sizeof(Tri3d));
