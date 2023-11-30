@@ -55,6 +55,7 @@ void pitch(Tri3d *tri, float f_theta);
 void yaw(Tri3d *tri, float f_theta);
 void translate(Tri3d *tri, float offset);
 void calculate_normals(Tri3d *tri);
-void project(Tri3d *tri, int W, int H);
+void project(Tri3d *tri, Mat4x4 *mat_proj, int W, int H);
+Mat4x4* make_projection_matrix(int height, int width);
 
 #endif /* GEOMETRY_H_ */

@@ -22,6 +22,7 @@ SDL_Color bgm = { 22, 22, 22, 255 };
 Data3d *obj_data;
 TriMesh3d *mesh;
 Vert3d *camera;
+Mat4x4 *mat_proj;
 
 float x_theta = 0;
 float y_theta = 0;
@@ -43,12 +44,15 @@ void init()
     setup_screen();
 
     tri_count = mesh -> tri_count;
+
+    mat_proj = make_projection_matrix(H, W);
 }
 
 void main_loop(void)
 {
     handle_events();
     clear_screen();
+
     for (int i = 0; i < tri_count; i++)
     {
         Tri3d tri = mesh -> tris[i];
@@ -80,18 +84,18 @@ void main_loop(void)
             // Clip
             
             // Project
-            project(&tri, W, H);
+            project(&tri, mat_proj, W, H);
             
             // Sort
 
             // Clip?
 
-            // fill_tri(tri.v[0].x, tri.v[0].y,
-            //     tri.v[1].x, tri.v[1].y,
-            //     tri.v[2].x, tri.v[2].y, '*', get_colour(rel_dist), &bgm);
-            draw_tri(tri.v[0].x, tri.v[0].y,
+            fill_tri(tri.v[0].x, tri.v[0].y,
                 tri.v[1].x, tri.v[1].y,
-                tri.v[2].x, tri.v[2].y, '*', get_colour(rel_dist), &bgm); 
+                tri.v[2].x, tri.v[2].y, '*', get_colour(rel_dist), &bgm);
+            // draw_tri(tri.v[0].x, tri.v[0].y,
+            //     tri.v[1].x, tri.v[1].y,
+            //     tri.v[2].x, tri.v[2].y, '*', get_colour(rel_dist), &bgm); 
         }
     }
     show_screen();

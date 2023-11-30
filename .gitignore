@@ -55,7 +55,7 @@ dkms.conf
 # Extra Ignores
 *.obj
 
-*/bin/*
+**/bin/*
 
 
 # React Ignores
