@@ -59,6 +59,10 @@ Mat4x4 * make_z_rotation(float f_theta);
 Mat4x4 * make_projection_matrix(int height, int width);
 Mat4x4 * make_translation_matrix(float z);
 
+
+void roll(Mat4x4 *mat, float f_theta);
+void pitch(Mat4x4 *mat, float f_theta);
+void yaw(Mat4x4 *mat, float f_theta);
 void calculate_normals(Tri3d *tri);
 void project(Tri3d *tri, Mat4x4 *mat_proj, int W, int H);
 

@@ -24,6 +24,10 @@ TriMesh3d *mesh;
 Vert3d *camera;
 Mat4x4 *mat_proj;
 Mat4x4 *mat_trans;
+Mat4x4 *mat_rot_x; 
+Mat4x4 *mat_rot_y;
+Mat4x4 *mat_rot_z;
+Mat4x4 *world_mat;
 
 float x_theta = 0;
 float y_theta = 0;
@@ -32,6 +36,7 @@ float z_theta = 0;
 int tri_count = 0;
 int W = 0;
 int H = 0;
+int frames = 0;
 
 void init()
 {
@@ -48,6 +53,12 @@ void init()
 
     mat_proj = make_projection_matrix(H, W);
     mat_trans = make_translation_matrix(TRANSLATION_CONST);
+
+    mat_rot_x = make_x_rotation(x_theta);
+    mat_rot_y = make_y_rotation(y_theta);
+    mat_rot_z = make_z_rotation(z_theta);
+    
+    world_mat = calloc(1, sizeof(Mat4x4));
 }
 
 void main_loop(void)
@@ -57,18 +68,26 @@ void main_loop(void)
     z_theta += ROTATION_CONST;
     clear_screen();
 
-    Mat4x4 *mat_rot_x = make_x_rotation(x_theta); 
-    Mat4x4 *mat_rot_y = make_y_rotation(y_theta);
-    Mat4x4 *mat_rot_z = make_z_rotation(z_theta);
+    // roll(mat_rot_x, x_theta);
+    mat_rot_x -> m[1][1] = cosf(x_theta);
+    mat_rot_x -> m[1][2] = sinf(x_theta);
+    mat_rot_x -> m[2][1] = -sinf(x_theta);
+    mat_rot_x -> m[2][2] = cosf(x_theta);
+    // pitch(mat_rot_y, y_theta);
+    mat_rot_y -> m[0][0] = cosf(y_theta);
+    mat_rot_y -> m[0][2] = sinf(y_theta);
+    mat_rot_y -> m[2][0] = -sinf(y_theta);
+    mat_rot_y -> m[2][2] = cosf(y_theta);
+    // yaw(mat_rot_z, z_theta);
+    mat_rot_z -> m[0][0] = cosf(z_theta);
+    mat_rot_z -> m[0][1] = sinf(z_theta);
+    mat_rot_z -> m[1][0] = -sinf(z_theta);
+    mat_rot_z -> m[1][1] = cosf(z_theta);
 
-    Mat4x4 *world_mat = calloc(1, sizeof(Mat4x4));
     world_mat = matrix_multiplication(mat_rot_x, mat_rot_y);
     world_mat = matrix_multiplication(world_mat, mat_rot_z);
     world_mat = matrix_multiplication(world_mat, mat_trans);
-
-    free(mat_rot_x);
-    free(mat_rot_y);
-    free(mat_rot_z);
+    
     for (int i = 0; i < tri_count; i++)
     {
         Tri3d *tri = calloc(1, sizeof(Tri3d));
@@ -110,12 +129,15 @@ void main_loop(void)
         free(tri);
     }
     show_screen();
+    frames++;
     free(world_mat);
 }
 
 int main(int argc, char *argv[])
 {
     init();
+    Uint32 start = SDL_GetTicks();
+
     #ifdef __EMSCRIPTEN__
         emscripten_set_main_loop(main_loop, 0, 1);
     #endif
@@ -126,6 +148,9 @@ int main(int argc, char *argv[])
             main_loop();
         }
     #endif
+
+    double fps = frames / ((SDL_GetTicks() - start) / 1000.0);
+    printf("FPS: %f\n", fps);
 
     exit_app();
     return 0;

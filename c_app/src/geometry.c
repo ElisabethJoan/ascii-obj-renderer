@@ -385,6 +385,30 @@ Mat4x4 * make_translation_matrix(float z)
     return mat_trans;
 }
 
+void roll(Mat4x4 *mat, float f_theta)
+{
+    mat -> m[1][1] = cosf(f_theta);
+    mat -> m[1][2] = sinf(f_theta);
+    mat -> m[2][1] = -sinf(f_theta);
+    mat -> m[2][2] = cosf(f_theta);
+}
+
+void pitch(Mat4x4 *mat, float f_theta)
+{
+    mat -> m[0][0] = cosf(f_theta);
+    mat -> m[0][2] = sinf(f_theta);
+    mat -> m[2][0] = -sinf(f_theta);
+    mat -> m[2][2] = cosf(f_theta);
+}
+
+void yaw(Mat4x4 *mat, float f_theta)
+{
+    mat -> m[0][0] = cosf(f_theta);
+    mat -> m[0][1] = sinf(f_theta);
+    mat -> m[1][0] = -sinf(f_theta);
+    mat -> m[1][1] = cosf(f_theta);
+}
+
 void calculate_normals(Tri3d *tri)
 {
     Vert3d line1, line2;
