@@ -2,6 +2,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <math.h>
+#include <time.h>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -19,7 +20,6 @@ SDL_bool done = SDL_FALSE;
 SDL_Event event;
 SDL_Color bgm = { 22, 22, 22, 255 };
 
-Data3d *obj_data;
 TriMesh3d *mesh;
 Vert3d *camera;
 Mat4x4 *mat_proj;
@@ -43,7 +43,7 @@ void init()
     W = grid_width();
     H = grid_height();
 
-    obj_data = read_obj("assets/cube.obj");
+    Data3d *obj_data = read_obj("assets/cube.obj");
     mesh = populate_trimesh(obj_data);
     camera = calloc(1, sizeof(Vert3d));
 
@@ -59,6 +59,25 @@ void init()
     mat_rot_z = make_z_rotation(z_theta);
     
     world_mat = calloc(1, sizeof(Mat4x4));
+
+
+    free(obj_data -> verts);
+    free(obj_data -> facets);
+    free(obj_data -> normals);
+    free(obj_data);
+}
+
+void cleanup()
+{
+  free(mesh -> tris);
+  free(mesh);
+  free(camera);
+  free(mat_proj);
+  free(mat_trans);
+  free(mat_rot_x);
+  free(mat_rot_y);
+  free(mat_rot_z);
+  free(world_mat);
 }
 
 void main_loop(void)
@@ -84,9 +103,9 @@ void main_loop(void)
     mat_rot_z -> m[1][0] = -sinf(z_theta);
     mat_rot_z -> m[1][1] = cosf(z_theta);
 
-    world_mat = matrix_multiplication(mat_rot_x, mat_rot_y);
-    world_mat = matrix_multiplication(world_mat, mat_rot_z);
-    world_mat = matrix_multiplication(world_mat, mat_trans);
+    *world_mat = matrix_multiplication(mat_rot_x, mat_rot_y);
+    *world_mat = matrix_multiplication(world_mat, mat_rot_z);
+    *world_mat = matrix_multiplication(world_mat, mat_trans);
     
     for (int i = 0; i < tri_count; i++)
     {
@@ -129,8 +148,8 @@ void main_loop(void)
         free(tri);
     }
     show_screen();
+    // TODO free colour
     frames++;
-    free(world_mat);
 }
 
 int main(int argc, char *argv[])
@@ -145,16 +164,26 @@ int main(int argc, char *argv[])
     #ifndef __EMSCRIPTEN__
         while (!done)
         {
+            clock_t begin = clock();
             main_loop();
+            clock_t end = clock();
+            double time_spent = (double) (end - begin) / CLOCKS_PER_SEC;
+            time_spent = time_spent * 1000;
+            time_spent = time_spent * 1000000;
+            struct timespec ts;
+            ts.tv_sec = 0;
+            ts.tv_nsec = 33333333.3333L - time_spent; 
+            nanosleep(&ts, NULL);
         }
     #endif
 
     double fps = frames / ((SDL_GetTicks() - start) / 1000.0);
     printf("FPS: %f\n", fps);
-
+    cleanup();
     exit_app();
     return 0;
 }
+
 
 void handle_events(void)
 {

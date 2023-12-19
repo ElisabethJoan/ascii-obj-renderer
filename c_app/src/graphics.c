@@ -130,6 +130,7 @@ void fill_tri(int x1, int y1, int x2, int y2, int x3, int y3, char value, SDL_Co
             b = x3;
         }
         draw_line(a, y1, b, y1, value, fg, bg);
+        free(fg);
         return;
     }
 
@@ -246,28 +247,78 @@ void setup_screen()
       SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Get text metrics: %s", TTF_GetError());
       return;
     }
-    
-    SDL_Cursor *cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
-    if (cursor == NULL)
-    {
-      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Get the system hand cursor: %s", SDL_GetError());
-      return;
-    }
-    SDL_SetCursor(cursor);
 
     window_w = grid_w * grid_cell_w;
     window_h = grid_h * grid_cell_h;
+
     if (SDL_CreateWindowAndRenderer(window_w, window_h, 0, &window, &renderer) < 0)
     {
-      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Create window and renderer: %s", SDL_GetError());
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
+          "Create window and renderer: %s", SDL_GetError());
       return;
     }
     SDL_SetWindowTitle(window, "3D ASCII Renderer");
 }
 
+typedef struct CacheNode
+{
+  char* key;
+  SDL_Texture *texture;
+  struct CacheNode *next;
+} CacheNode;
+
+static CacheNode * create_cache() 
+{ 
+    CacheNode *head = calloc(1, sizeof(CacheNode));
+    head -> next = NULL;
+    head -> key = NULL;
+    return head;
+}
+
+static CacheNode * append_cache(CacheNode *head, char *key, SDL_Texture *value)
+{
+    head -> next = (CacheNode*) malloc(sizeof(CacheNode));
+    head = head -> next;
+    head -> texture = value;
+    head -> key = (char*) malloc(strlen(key) + 1);
+    strcpy(head -> key, key);
+    head -> next = NULL;
+    return head;
+}
+
+static SDL_Texture * search_cache(CacheNode *head, char *key)
+{
+  CacheNode *current = head;
+  while (current != NULL)
+  {
+    if (current -> key != NULL && strcmp(current -> key, key) == 0) 
+    {
+      return current-> texture;
+    }
+    current = current -> next;
+  }
+  return NULL;
+}
+
+static void delete_cache(CacheNode *first)
+{
+    CacheNode *head = first; 
+    while (head != NULL)
+    {
+        free(head -> key);
+        SDL_DestroyTexture(head->texture);
+        head = head -> next;
+    }
+
+    free(first -> key);
+    SDL_DestroyTexture(first->texture);
+    free(first);
+}
+
 void show_screen(void)
 {
-    SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, bg.a);
+    CacheNode *head = create_cache();
+    CacheNode *first = head;
     SDL_RenderClear(renderer);
     SDL_Rect dest = {
         .x = 0,
@@ -282,25 +333,33 @@ void show_screen(void)
         {
             dest.x = grid_cell_w * x;
             dest.y = grid_cell_h * y;
-
+            
             GridCell *cell = &grid[x + grid_w * y];
             
-            SDL_Surface *surface = TTF_RenderGlyph_Shaded(font, (Uint16) cell -> c, *cell -> fg, *cell -> bg);
-
-            SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+            char str[11];
+            sprintf(str, "%c%d%d%d", cell -> c, cell -> fg[0].r, cell -> fg[1].b, cell -> fg[2].g);
             
-            SDL_SetRenderDrawColor(renderer, cell -> bg -> r, cell -> bg -> g, cell -> bg -> b, cell -> bg -> a);
+            SDL_Texture *texture = search_cache(first, str);
 
-            SDL_RenderFillRect(renderer, &dest);
+            if (texture == NULL) 
+            {
+              SDL_Surface *surface = TTF_RenderGlyph_Shaded(font, (Uint16) cell -> c, *cell -> fg, *cell -> bg);
 
-            SDL_RenderCopy(renderer, texture, NULL, &dest);
+              texture = SDL_CreateTextureFromSurface(renderer, surface);
+             
+              head = append_cache(head, str, texture);
+              SDL_RenderCopy(renderer, texture, NULL, &dest);
 
-            SDL_DestroyTexture(texture);
-            SDL_FreeSurface(surface);
+              SDL_FreeSurface(surface);
+            }
+            else 
+            {
+              SDL_RenderCopy(renderer, texture, NULL, &dest);
+            }
         }
     }
-
     SDL_RenderPresent(renderer);
+    delete_cache(first);
 }
 
 void clear_screen(void)
