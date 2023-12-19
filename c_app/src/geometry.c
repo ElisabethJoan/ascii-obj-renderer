@@ -6,10 +6,6 @@
 int num_verts = 0;
 int num_facets = 0;
 int num_normals = 0;
-Vert3d *verts;
-Facet3d *facets;
-Vert3d *normals;
-
 
 // ------------------------------------------------------------------
 // INGEST FUNCTIONS
@@ -45,6 +41,7 @@ static void count_labels(char *arg)
     }
 
     rewind(fp);
+    fclose(fp);
 }
 
 static void normalize_obj(Vert3d *verts, int v_size, Vert3d *norms, int n_size) {
@@ -86,9 +83,9 @@ Data3d * read_obj(char *arg)
 {
     count_labels(arg);
     FILE *fp = fopen(arg, "r");
-    verts = calloc(num_verts, sizeof(Vert3d));
-    facets = calloc(num_facets, sizeof(Facet3d));
-    normals = calloc(num_normals, sizeof(Vert3d));
+    Vert3d *verts = calloc(num_verts, sizeof(Vert3d));
+    Facet3d *facets = calloc(num_facets, sizeof(Facet3d));
+    Vert3d *normals = calloc(num_normals, sizeof(Vert3d));
     int vert_count = 0;
     int facet_count = 0;
     int normal_count = 0;
@@ -129,13 +126,14 @@ Data3d * read_obj(char *arg)
             }
         }
     }
-
     normalize_obj(verts, vert_count, normals, normal_count);
 
     Data3d *obj_data = calloc(1, sizeof(Data3d));
     obj_data -> verts = verts;
     obj_data -> facets = facets;
     obj_data -> normals = normals;
+    
+    fclose(fp);
     return obj_data;
 }
 
@@ -197,14 +195,14 @@ Vert3d matrix_vector_product(Mat4x4 *m, Vert3d v)
     return o;
 }
 
-Mat4x4 * matrix_multiplication(Mat4x4 *m1, Mat4x4 *m2)
+Mat4x4 matrix_multiplication(Mat4x4 *m1, Mat4x4 *m2)
 {
-    Mat4x4 *matrix = calloc(1, sizeof(Mat4x4));
+    Mat4x4 matrix;
     for (int c = 0; c < 4; c++)
     {
         for (int r = 0; r < 4; r++)
         {
-            matrix -> m[r][c] = m1 -> m[r][0] * m2 -> m[0][c] + m1 -> m[r][1] * m2 -> m[1][c] + m1 -> m[r][2] * m2 -> m[2][c] + m1 -> m[r][3] * m2 -> m[3][c];
+            matrix.m[r][c] = m1 -> m[r][0] * m2 -> m[0][c] + m1 -> m[r][1] * m2 -> m[1][c] + m1 -> m[r][2] * m2 -> m[2][c] + m1 -> m[r][3] * m2 -> m[3][c];
         }
     }
 

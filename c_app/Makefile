@@ -14,7 +14,7 @@ LDLIBS := -lSDL2 -lSDL2_ttf -lm
 
 EM_CC      := emcc
 EM_CFLAGS  := -Wall -g -lm -O3
-EM_LDFLAGS := -s USE_SDL=2 -s USE_SDL_TTF=2 -sALLOW_MEMORY_GROWTH -fsanitize=address --preload-file assets/FiraMono-Regular.ttf --preload-file assets/cube.obj
+EM_LDFLAGS := -s USE_SDL=2 -s USE_SDL_TTF=2 -sALLOW_MEMORY_GROWTH --preload-file assets/FiraMono-Regular.ttf --preload-file assets/cube.obj
 
 
 .PHONY: pc em clean

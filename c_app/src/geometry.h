@@ -51,7 +51,7 @@ Data3d * read_obj(char *arg);
 TriMesh3d * populate_trimesh(Data3d *obj_data);
 
 Vert3d matrix_vector_product(Mat4x4 *m, Vert3d v); 
-Mat4x4 * matrix_multiplication(Mat4x4 *m1, Mat4x4 *m2);
+Mat4x4 matrix_multiplication(Mat4x4 *m1, Mat4x4 *m2);
 
 Mat4x4 * make_x_rotation(float f_theta);
 Mat4x4 * make_y_rotation(float f_theta);
