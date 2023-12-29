@@ -166,8 +166,7 @@ void fill_tri(int x1, int y1, int x2, int y2, int x3, int y3, char value, SDL_Co
 SDL_Color* get_colour(float lum)
 {
     int light_index = (int) (7.0f * lum);
-    SDL_Color *colour;
-    colour = calloc(1, sizeof(SDL_Color));
+    SDL_Color *colour = calloc(1, sizeof(SDL_Color));
     switch (light_index)
     {
         case 0:
@@ -270,20 +269,20 @@ typedef struct CacheNode
 static CacheNode * create_cache() 
 { 
     CacheNode *head = calloc(1, sizeof(CacheNode));
-    head -> next = NULL;
     head -> key = NULL;
+    head -> next = NULL;
     return head;
 }
 
 static CacheNode * append_cache(CacheNode *head, char *key, SDL_Texture *value)
 {
-    head -> next = (CacheNode*) malloc(sizeof(CacheNode));
-    head = head -> next;
-    head -> texture = value;
-    head -> key = (char*) malloc(strlen(key) + 1);
-    strcpy(head -> key, key);
-    head -> next = NULL;
-    return head;
+    CacheNode *new_node = (CacheNode*) malloc(sizeof(CacheNode));
+    new_node -> key = (char*) malloc(strlen(key) + 1);
+    strcpy(new_node -> key, key);
+    new_node -> texture = value;
+    new_node -> next = NULL;
+    head -> next = new_node;
+    return new_node;
 }
 
 static SDL_Texture * search_cache(CacheNode *head, char *key)
@@ -300,25 +299,23 @@ static SDL_Texture * search_cache(CacheNode *head, char *key)
   return NULL;
 }
 
-static void delete_cache(CacheNode *first)
+static void delete_cache(CacheNode *head)
 {
-    CacheNode *head = first; 
-    while (head != NULL)
+    CacheNode *current = head; 
+    while (current != NULL)
     {
-        free(head -> key);
-        SDL_DestroyTexture(head->texture);
-        head = head -> next;
+        CacheNode *to_free = current;
+        current = current -> next;
+        free(to_free -> key);
+        SDL_DestroyTexture(to_free -> texture);
+        free(to_free);
     }
-
-    free(first -> key);
-    SDL_DestroyTexture(first->texture);
-    free(first);
 }
 
 void show_screen(void)
 {
     CacheNode *head = create_cache();
-    CacheNode *first = head;
+    CacheNode *current = head;
     SDL_RenderClear(renderer);
     SDL_Rect dest = {
         .x = 0,
@@ -337,9 +334,9 @@ void show_screen(void)
             GridCell *cell = &grid[x + grid_w * y];
             
             char str[11];
-            sprintf(str, "%c%d%d%d", cell -> c, cell -> fg[0].r, cell -> fg[1].b, cell -> fg[2].g);
+            sprintf(str, "%c%d%d%d", cell -> c, cell -> fg -> r, cell -> fg -> b, cell -> fg -> g);
             
-            SDL_Texture *texture = search_cache(first, str);
+            SDL_Texture *texture = search_cache(head, str);
 
             if (texture == NULL) 
             {
@@ -347,7 +344,7 @@ void show_screen(void)
 
               texture = SDL_CreateTextureFromSurface(renderer, surface);
              
-              head = append_cache(head, str, texture);
+              current = append_cache(current, str, texture);
               SDL_RenderCopy(renderer, texture, NULL, &dest);
 
               SDL_FreeSurface(surface);
@@ -359,7 +356,7 @@ void show_screen(void)
         }
     }
     SDL_RenderPresent(renderer);
-    delete_cache(first);
+    delete_cache(head);
 }
 
 void clear_screen(void)

@@ -4,7 +4,7 @@ BIN_DIR := bin
 WEB_DIR := web
 
 EXE := $(BIN_DIR)/main
-WEB := $(WEB_DIR)/app.html
+WEB := $(WEB_DIR)/app.mjs
 SRC := $(wildcard $(SRC_DIR)/*.c)
 OBJ := $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC))
 
@@ -14,7 +14,7 @@ LDLIBS := -lSDL2 -lSDL2_ttf -lm
 
 EM_CC      := emcc
 EM_CFLAGS  := -Wall -g -lm -O3
-EM_LDFLAGS := -s USE_SDL=2 -s USE_SDL_TTF=2 -sALLOW_MEMORY_GROWTH --preload-file assets/FiraMono-Regular.ttf --preload-file assets/cube.obj
+EM_LDFLAGS := -s USE_SDL=2 -s USE_SDL_TTF=2 -sALLOW_MEMORY_GROWTH --preload-file assets
 
 
 .PHONY: pc em clean
