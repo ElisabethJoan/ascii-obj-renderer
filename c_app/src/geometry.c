@@ -1,15 +1,11 @@
+#include <stdio.h>
 #include <stdlib.h>
-#include <curses.h>
 #include <math.h>
 #include "geometry.h"
 
 int num_verts = 0;
 int num_facets = 0;
 int num_normals = 0;
-Vert3d *verts;
-Facet3d *facets;
-Vert3d *normals;
-
 
 // ------------------------------------------------------------------
 // INGEST FUNCTIONS
@@ -45,6 +41,7 @@ static void count_labels(char *arg)
     }
 
     rewind(fp);
+    fclose(fp);
 }
 
 static void normalize_obj(Vert3d *verts, int v_size, Vert3d *norms, int n_size) {
@@ -86,9 +83,9 @@ Data3d * read_obj(char *arg)
 {
     count_labels(arg);
     FILE *fp = fopen(arg, "r");
-    verts = calloc(num_verts, sizeof(Vert3d));
-    facets = calloc(num_facets, sizeof(Facet3d));
-    normals = calloc(num_normals, sizeof(Vert3d));
+    Vert3d *verts = calloc(num_verts, sizeof(Vert3d));
+    Facet3d *facets = calloc(num_facets, sizeof(Facet3d));
+    Vert3d *normals = calloc(num_normals, sizeof(Vert3d));
     int vert_count = 0;
     int facet_count = 0;
     int normal_count = 0;
@@ -129,13 +126,14 @@ Data3d * read_obj(char *arg)
             }
         }
     }
-
     normalize_obj(verts, vert_count, normals, normal_count);
 
     Data3d *obj_data = calloc(1, sizeof(Data3d));
     obj_data -> verts = verts;
     obj_data -> facets = facets;
     obj_data -> normals = normals;
+    
+    fclose(fp);
     return obj_data;
 }
 
@@ -180,7 +178,7 @@ TriMesh3d * populate_trimesh(Data3d *obj_data)
 // MATH FUNCTIONS
 // ------------------------------------------------------------------
 
-static Vert3d multiple_matrix_vector(Mat4x4 *m, Vert3d v) 
+Vert3d matrix_vector_product(Mat4x4 *m, Vert3d v) 
 {
     Vert3d o;
 
@@ -195,6 +193,20 @@ static Vert3d multiple_matrix_vector(Mat4x4 *m, Vert3d v)
     }
 
     return o;
+}
+
+Mat4x4 matrix_multiplication(Mat4x4 *m1, Mat4x4 *m2)
+{
+    Mat4x4 matrix;
+    for (int c = 0; c < 4; c++)
+    {
+        for (int r = 0; r < 4; r++)
+        {
+            matrix.m[r][c] = m1 -> m[r][0] * m2 -> m[0][c] + m1 -> m[r][1] * m2 -> m[1][c] + m1 -> m[r][2] * m2 -> m[2][c] + m1 -> m[r][3] * m2 -> m[3][c];
+        }
+    }
+
+    return matrix;
 }
 
 // static Mat4x4 * cofactor(Mat4x4 *m, int p, int q, int n)
@@ -298,7 +310,7 @@ static Vert3d multiple_matrix_vector(Mat4x4 *m, Vert3d v)
 //     return transposed;
 // }
 
-void roll(Tri3d *tri, float f_theta)
+Mat4x4 * make_x_rotation(float f_theta)
 {
     Mat4x4 *mat_rot_x = calloc(1, sizeof(Mat4x4));
     mat_rot_x -> m[0][0] = 1;
@@ -308,23 +320,11 @@ void roll(Tri3d *tri, float f_theta)
     mat_rot_x -> m[2][2] = cosf(f_theta);
     mat_rot_x -> m[3][3] = 1;
 
-    // Mat4x4 *mat_inverse = calloc(1, sizeof(Mat4x4));
-    // mat_inverse = inverse(mat_rot_x);
-    // Mat4x4 *mat_transpose = calloc(1, sizeof(Mat4x4));
-    // mat_transpose = transpose(mat_inverse);
-
-    Tri3d tri_rot_x;
-    tri_rot_x.v[0] = multiple_matrix_vector(mat_rot_x, tri -> v[0]);
-    tri_rot_x.v[1] = multiple_matrix_vector(mat_rot_x, tri -> v[1]);
-    tri_rot_x.v[2] = multiple_matrix_vector(mat_rot_x, tri -> v[2]);
-    // tri_rot_x.n = multiple_matrix_vector(mat_transpose, tri -> n);
-    *tri = tri_rot_x;
-
-    free(mat_rot_x);
+    return mat_rot_x;
 }
 
-void pitch(Tri3d *tri, float f_theta) 
-{
+Mat4x4 * make_y_rotation(float f_theta) 
+{ 
     Mat4x4 *mat_rot_y = calloc(1, sizeof(Mat4x4));
     mat_rot_y -> m[0][0] = cosf(f_theta);
     mat_rot_y -> m[0][2] = sinf(f_theta);
@@ -333,22 +333,10 @@ void pitch(Tri3d *tri, float f_theta)
     mat_rot_y -> m[2][2] = cosf(f_theta);
     mat_rot_y -> m[3][3] = 1;
 
-    // Mat4x4 *mat_inverse = calloc(1, sizeof(Mat4x4));
-    // mat_inverse = inverse(mat_rot_y);
-    // Mat4x4 *mat_transpose = calloc(1, sizeof(Mat4x4));
-    // mat_transpose = transpose(mat_inverse);
-
-    Tri3d tri_rot_y;
-    tri_rot_y.v[0] = multiple_matrix_vector(mat_rot_y, tri -> v[0]);
-    tri_rot_y.v[1] = multiple_matrix_vector(mat_rot_y, tri -> v[1]);
-    tri_rot_y.v[2] = multiple_matrix_vector(mat_rot_y, tri -> v[2]);
-    // tri_rot_y.n = multiple_matrix_vector(mat_transpose, tri -> n);
-    *tri = tri_rot_y;
-
-    free(mat_rot_y);
+    return mat_rot_y;
 }
 
-void yaw(Tri3d *tri, float f_theta)
+Mat4x4 * make_z_rotation(float f_theta)
 {
     Mat4x4 *mat_rot_z = calloc(1, sizeof(Mat4x4));
     mat_rot_z -> m[0][0] = cosf(f_theta);
@@ -358,29 +346,65 @@ void yaw(Tri3d *tri, float f_theta)
     mat_rot_z -> m[2][2] = 1;
     mat_rot_z -> m[3][3] = 1;
 
-    // Mat4x4 *mat_inverse = calloc(1, sizeof(Mat4x4));
-    // mat_inverse = inverse(mat_rot_z);
-    // Mat4x4 *mat_transpose = calloc(1, sizeof(Mat4x4));
-    // mat_transpose = transpose(mat_inverse);
-
-    Tri3d tri_rot_z;
-    tri_rot_z.v[0] = multiple_matrix_vector(mat_rot_z, tri -> v[0]);
-    tri_rot_z.v[1] = multiple_matrix_vector(mat_rot_z, tri -> v[1]);
-    tri_rot_z.v[2] = multiple_matrix_vector(mat_rot_z, tri -> v[2]);
-    // tri_rot_z.n = multiple_matrix_vector(mat_transpose, tri -> n);
-    *tri = tri_rot_z;
-
-    free(mat_rot_z);
+    return mat_rot_z;
 }
 
-void translate(Tri3d *tri, float offset)
+Mat4x4 * make_projection_matrix(int height, int width)
 {
-    Tri3d tri_trans;
-    tri_trans.v[0].z = tri -> v[0].z + offset;
-    tri_trans.v[1].z = tri -> v[1].z + offset;
-    tri_trans.v[2].z = tri -> v[2].z + offset;
+    float f_near = 0.1f;
+    float f_far = 1000.0f;
+    float f_fov = 90.0f;
+    float f_aspect_ratio = (float) height / (float) width;
+    float f_fov_rad = 1.0f / tanf(f_fov * 0.5f / 180.0f * 3.14159f);
 
-    *tri = tri_trans;
+    Mat4x4 *mat_proj = calloc(1, sizeof(Mat4x4));
+
+    mat_proj -> m[0][0] = f_aspect_ratio * f_fov_rad;
+    mat_proj -> m[1][1] = f_fov_rad;
+    mat_proj -> m[2][2] = f_far / (f_far - f_near);
+    mat_proj -> m[3][2] = (-f_far * f_near) / (f_far - f_near);
+    mat_proj -> m[2][3] = 1.0f;
+    mat_proj -> m[3][3] = 0.0f;
+
+    return mat_proj;
+}
+
+Mat4x4 * make_translation_matrix(float z)
+{
+    Mat4x4 *mat_trans = calloc(1, sizeof(Mat4x4));
+    mat_trans -> m[0][0] = 1.0f;
+	  mat_trans -> m[1][1] = 1.0f;
+	  mat_trans -> m[2][2] = 1.0f;
+	  mat_trans -> m[3][3] = 1.0f;
+	  mat_trans -> m[3][0] = 0.0f;
+	  mat_trans -> m[3][1] = 0.0f;
+	  mat_trans -> m[3][2] = 3.0f;
+
+    return mat_trans;
+}
+
+void roll(Mat4x4 *mat, float f_theta)
+{
+    mat -> m[1][1] = cosf(f_theta);
+    mat -> m[1][2] = sinf(f_theta);
+    mat -> m[2][1] = -sinf(f_theta);
+    mat -> m[2][2] = cosf(f_theta);
+}
+
+void pitch(Mat4x4 *mat, float f_theta)
+{
+    mat -> m[0][0] = cosf(f_theta);
+    mat -> m[0][2] = sinf(f_theta);
+    mat -> m[2][0] = -sinf(f_theta);
+    mat -> m[2][2] = cosf(f_theta);
+}
+
+void yaw(Mat4x4 *mat, float f_theta)
+{
+    mat -> m[0][0] = cosf(f_theta);
+    mat -> m[0][1] = sinf(f_theta);
+    mat -> m[1][0] = -sinf(f_theta);
+    mat -> m[1][1] = cosf(f_theta);
 }
 
 void calculate_normals(Tri3d *tri)
@@ -398,32 +422,16 @@ void calculate_normals(Tri3d *tri)
     tri -> n.y = line1.z * line2.x - line1.x * line2.z;
     tri -> n.z = line1.x * line2.y - line1.y * line2.x;
 
-    float len = sqrtf(tri -> n.x * tri -> n.x + tri -> n.y * tri -> n.y
-                        + tri -> n.z * tri -> n.z);
+    float len = sqrtf(tri -> n.x * tri -> n.x + tri -> n.y * tri -> n.y + tri -> n.z * tri -> n.z);
     tri -> n.x /= len; tri -> n.y /= len; tri -> n.z /= len;
 }
 
-void project(Tri3d *tri, int W, int H)
+void project(Tri3d *tri, Mat4x4 *mat_proj, int W, int H)
 {
-    float f_near = 0.1f;
-    float f_far = 1000.0f;
-    float f_fov = 90.0f;
-    float f_aspect_ratio = (float) H / (float) W;
-    float f_fov_rad = 1.0f / tanf(f_fov * 0.5f / 180.0f * 3.14159f);
-
-    Mat4x4 *mat_proj = calloc(1, sizeof(Mat4x4));
-
-    mat_proj -> m[0][0] = f_aspect_ratio * f_fov_rad;
-    mat_proj -> m[1][1] = f_fov_rad;
-    mat_proj -> m[2][2] = f_far / (f_far - f_near);
-    mat_proj -> m[3][2] = (-f_far * f_near) / (f_far - f_near);
-    mat_proj -> m[2][3] = 1.0f;
-    mat_proj -> m[3][3] = 0.0f;
-
     Tri3d tri_proj;
-    tri_proj.v[0] = multiple_matrix_vector(mat_proj, tri -> v[0]);
-    tri_proj.v[1] = multiple_matrix_vector(mat_proj, tri -> v[1]);
-    tri_proj.v[2] = multiple_matrix_vector(mat_proj, tri -> v[2]);
+    tri_proj.v[0] = matrix_vector_product(mat_proj, tri -> v[0]);
+    tri_proj.v[1] = matrix_vector_product(mat_proj, tri -> v[1]);
+    tri_proj.v[2] = matrix_vector_product(mat_proj, tri -> v[2]);
 
     tri_proj.v[0].x += 1.0f; tri_proj.v[0].y += 1.0f;
     tri_proj.v[1].x += 1.0f; tri_proj.v[1].y += 1.0f;
@@ -436,6 +444,5 @@ void project(Tri3d *tri, int W, int H)
     tri_proj.v[2].x *= 0.5f * W;
     tri_proj.v[2].y *= 0.5f * H;
     *tri = tri_proj;
-
-    free(mat_proj);
 }
+
