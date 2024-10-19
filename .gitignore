@@ -54,6 +54,7 @@ dkms.conf
 
 # Extra Ignores
 *.obj
+*.ttf
 
 **/bin/*
 **/web/*
