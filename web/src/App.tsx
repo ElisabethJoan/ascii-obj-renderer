@@ -1,13 +1,14 @@
 // import { useState } from 'react'
 
-import './App.css'
+import { WASMLoader } from "./WebAssemblyLoader"
+import "./App.css"
 
 function App() {
 
   return (
     <>
       <div>
-        <h2>Test</h2>
+        <WASMLoader moduleName={"main"}/>
       </div>
     </>
   )
