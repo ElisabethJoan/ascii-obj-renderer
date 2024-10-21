@@ -57,7 +57,9 @@ dkms.conf
 *.ttf
 
 **/bin/*
-**/web/src/wasm*
+**/web/public/main.js
+**/web/public/main.data
+**/web/public/main.wasm
 
 # React Ignores
 # dependencies

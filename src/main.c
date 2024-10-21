@@ -83,8 +83,6 @@ void cleanup()
 void main_loop(void)
 {
     handle_events();
-    x_theta += ROTATION_CONST;
-    z_theta += ROTATION_CONST;
     clear_screen();
 
     // roll(mat_rot_x, x_theta);
