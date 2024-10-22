@@ -3,7 +3,8 @@ import * as React from "react";
 import { Modal } from "./Modal";
 
 type WASMLoaderProps = {
-    moduleName: string,
+    moduleName: string;
+    objFile: string;
 }
 
 export const WASMLoader: React.FC<WASMLoaderProps> = ({ moduleName }) => {
