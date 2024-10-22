@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { Modal } from "./Modal";
+import "./WASMLoader.css";
 
 type WASMLoaderProps = {
     moduleName: string;
@@ -46,6 +47,7 @@ export const WASMLoader: React.FC<WASMLoaderProps> = ({ moduleName }) => {
 
     return (
         <div>
+            { !initialized && ( <div className="placeholderCanvas"></div> ) }
             <Modal show={initialized}>
                 <canvas ref={canvasRef} className="canvas" id="canvas" onContextMenu={event => event.preventDefault()} />
             </Modal>

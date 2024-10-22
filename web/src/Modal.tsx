@@ -1,10 +1,11 @@
 import * as React from "react";
+import "./Modal.css";
 
 export const Modal = ({ show, children }: { show: boolean; children: React.ReactElement }) => {
-    const showHideClassName = show ? "modal display-block" : "modal display-none";
+    const showHideClassName = show ? "display-block" : "display-none";
     return (
         <div className={showHideClassName}>
-            <section className="modal-main">
+            <section>
                 {children}
             </section>
         </div>
