@@ -20,9 +20,7 @@ jobs:
           version: latest
           platform: x64
       - name: Setup Emscripten
-        uses: lovasoa/setup-emscripten@master
-        with:
-          emscripten-version: '1.38.47'
+        uses: mymindstorm/setup-emsdk@v14
       - name: Build WASM
         run: make em
       - name: Setup Node
