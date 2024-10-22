@@ -1,5 +1,3 @@
-// import { useState } from 'react'
-
 import { WASMLoader } from "./WebAssemblyLoader"
 import "./App.css"
 

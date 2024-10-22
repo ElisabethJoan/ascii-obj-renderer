@@ -9,22 +9,23 @@ type WASMLoaderProps = {
 export const WASMLoader: React.FC<WASMLoaderProps> = ({ moduleName }) => {
     const [initialized, setInitialized] = React.useState(false);
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
-
+    
     function runModule() {
-        const moduleMethod = window[moduleName];
+        const moduleMethod = (window as any)[moduleName];
+        console.log(moduleMethod)
         let module = {
             canvas: (() => canvasRef.current)(),
-            print: text => console.log(text),
-            printErr: text => console.log(text),
+            print: (text: string) => console.log(text),
+            printErr: (text: string) => console.log(text),
         };
-        moduleMethod(module).then((finishModule) => {
+        moduleMethod(module).then((finishModule: any) => {
             setInitialized(true);
             module = finishModule;
         })
     }
 
     function waitUntilModuleOnDOM() {
-        if (window[moduleName]) {
+        if ((window as any)[moduleName]) {
             runModule();
         } else {
             setTimeout(waitUntilModuleOnDOM, 250)
@@ -32,8 +33,7 @@ export const WASMLoader: React.FC<WASMLoaderProps> = ({ moduleName }) => {
     }
 
     React.useEffect(() => {
-        console.log(1)
-        if (window[moduleName]) {
+        if ((window as any)[moduleName]) {
             runModule()
         } else {
             const script = document.createElement("script");
