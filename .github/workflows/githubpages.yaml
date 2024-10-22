@@ -1,0 +1,47 @@
+name: Deploy To GitHub Pages
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+      - name: Setup GCC
+        uses: egor-tensin/setup-gcc@v1
+        with:
+          version: latest
+          platform: x64
+      - name: Setup Emscripten
+        uses: lovasoa/setup-emscripten@master
+        with:
+          emscripten-version: '1.38.47'
+      - name: Build WASM
+        run: make em
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+            node-version: 20
+      - name: Install Dependencies
+        working-directory: ./web
+        run: npm ci
+      - name: Build Project
+        working-directory: ./web
+        run: npm run build
+      - name: Upload artifacts
+        uses: actions/upload-pages-artifact@v3
+        with:
+           name: 'github-pages'
+           path: web/build
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifact_name: 'github-pages'
