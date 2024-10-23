@@ -24,6 +24,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ uploadFile }) => {
       role={undefined}
       variant="outlined"
       tabIndex={-1}
+      disabled={true}
     >
       Upload OBJ
       <VisuallyHiddenInput

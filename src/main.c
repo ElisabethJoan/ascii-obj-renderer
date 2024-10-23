@@ -38,12 +38,11 @@ int W = 0;
 int H = 0;
 int frames = 0;
 
-void init()
+void init(Data3d *obj_data)
 {
     W = grid_width();
     H = grid_height();
 
-    Data3d *obj_data = read_obj("assets/cube.obj");
     mesh = populate_trimesh(obj_data);
     camera = calloc(1, sizeof(Vert3d));
 
@@ -152,7 +151,8 @@ void main_loop(void)
 
 int main(int argc, char *argv[])
 {
-    init();
+    Data3d *obj_data = read_obj(argv[1]);
+    init(obj_data);
     Uint32 start = SDL_GetTicks();
 
     #ifdef __EMSCRIPTEN__

@@ -5,20 +5,20 @@ import "./WASMLoader.css";
 
 type WASMLoaderProps = {
     moduleName: string;
-    objFile: string;
+    args?: string[];
 }
 
-export const WASMLoader: React.FC<WASMLoaderProps> = ({ moduleName }) => {
+export const WASMLoader: React.FC<WASMLoaderProps> = ({ moduleName, args }) => {
     const [initialized, setInitialized] = React.useState(false);
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
     
     function runModule() {
         const moduleMethod = (window as any)[moduleName];
-        console.log(moduleMethod)
         let module = {
             canvas: (() => canvasRef.current)(),
             print: (text: string) => console.log(text),
             printErr: (text: string) => console.log(text),
+            arguments: args,
         };
         moduleMethod(module).then((finishModule: any) => {
             setInitialized(true);
@@ -43,7 +43,7 @@ export const WASMLoader: React.FC<WASMLoaderProps> = ({ moduleName }) => {
             document.body.appendChild(script);
             waitUntilModuleOnDOM();
         };
-    }, []);
+    }, [args]);
 
     return (
         <div>
