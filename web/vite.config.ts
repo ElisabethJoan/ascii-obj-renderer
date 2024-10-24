@@ -12,6 +12,6 @@ export default defineConfig({
   plugins: [
         react()
     ],  
-  assetsInclude: ["**/*.obj", "**/*.ttf", "**/*.js",  "**/*.data", "**/*.wasm"],
+  assetsInclude: ["**/*.obj", "**/*.ttf", "**/*.data", "**/*.wasm"],
   base: "./",
 });
