@@ -11,6 +11,7 @@ export default defineConfig({
   },
   plugins: [
         react()
-    ],
-  base: "https://elisabeth.github.io/ascii-obj-renderer/",
+    ],  
+  assetsInclude: ["**/*.obj", "**/*.ttf", "**/*.js",  "**/*.data", "**/*.wasm"],
+  base: "./",
 });
