@@ -28,7 +28,7 @@ jobs:
         with:
             node-version: 20
       - name: Authenticate with GitHub Package Registry
-        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GHP_TOKEN }}" > ~/.npmrc
+        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GHP_INSTALL_TOKEN }}" > ~/.npmrc
       - name: Install Dependencies
         working-directory: ./web
         run: npm ci
