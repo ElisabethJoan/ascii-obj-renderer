@@ -3,7 +3,7 @@ import { Button, Stack } from "@mui/material";
 
 import { HomeRow } from "@elisabethjoan/portfolio-scaffold";
 
-import { WASMLoader } from "./WebAssemblyLoader";
+import { WASMLoader } from "./WASMLoader";
 import { FileUpload } from "./FileUpload";
 
 function App() {
