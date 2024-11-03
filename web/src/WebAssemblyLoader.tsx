@@ -46,11 +46,11 @@ export const WASMLoader: React.FC<WASMLoaderProps> = ({ moduleName, args }) => {
     }, [args]);
 
     return (
-        <div>
+        <>
             { !initialized && ( <div className="placeholderCanvas"></div> ) }
             <Modal show={initialized}>
                 <canvas ref={canvasRef} className="canvas" id="canvas" onContextMenu={event => event.preventDefault()} />
             </Modal>
-        </div>
+        </>
     );
 }

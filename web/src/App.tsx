@@ -1,9 +1,10 @@
 import * as React from "react";
 import { Button, Stack } from "@mui/material";
 
+import { HomeRow } from "@elisabethjoan/portfolio-scaffold";
+
 import { WASMLoader } from "./WebAssemblyLoader";
 import { FileUpload } from "./FileUpload";
-import "./App.css"
 
 function App() {
   const [file, setFile] = React.useState("assets/cube.obj");
@@ -19,6 +20,7 @@ function App() {
 
   return (
     <>
+      <HomeRow extension={".tsx"} />
       <WASMLoader moduleName={"main"} args={[file]} />
       <Stack spacing={1} direction="row">
         <Button variant="outlined" onClick={() => selectFile("assets/cube.obj")}>Cube</Button>
