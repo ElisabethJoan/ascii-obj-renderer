@@ -22,7 +22,13 @@ function App() {
     <>
       <HomeRow extension={".tsx"} />
       <WASMLoader moduleName={"main"} args={[file]} />
-      <Stack spacing={1} direction="row">
+      <Stack 
+        spacing={2}
+        padding={2}
+        direction="row"
+        alignContent="flex-end"
+        justifyContent="center"
+      >
         <Button variant="outlined" onClick={() => selectFile("assets/cube.obj")}>Cube</Button>
         <Button variant="outlined" onClick={() => selectFile("assets/torus10.obj")}>Torus</Button>
         <FileUpload uploadFile={uploadFile} />
