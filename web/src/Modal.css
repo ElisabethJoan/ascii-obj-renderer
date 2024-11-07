@@ -5,3 +5,8 @@
 .display-none {
     display: none;
 }
+
+.SketchWrapper {
+    height: 800px;
+    align-content: center;
+}
